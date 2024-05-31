@@ -124,28 +124,48 @@
 ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────┼──────────────────────────────────────────────┼───────────┤
 │ com.android.tools:desugar_jdk_libs_configuration:2.0.4 [artifactType=_internal-desugar-lib-config]           │  16.24 KB │ ExtractJniTransform                          │   9.55 MB │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────┴──────────────────────────────────────────────┴───────────┘
-┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                              Slowest Artifact Transforms                                                              │
-├───────────────┬──────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────┬───────────┤
-│ Build Scan Id │   Artifact Transform type    │                                            Name                                            │ Duration  │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ a3ycywkiavxtm │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 16.96s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ r4vtcqzf2jd5c │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 15.27s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ p3k42edlfsbzo │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 14.13s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ hmvqstkoegy2c │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 12.75s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ f2h2t3mrphkwq │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │  2m 11.6s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ v7wyqt7ki6v5k │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 10.81s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ eqpxxabzgrqmg │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 10.37s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ agn6swxeimvjs │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 10.16s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ ib4ml3us3d7ma │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │ 2m 10.12s │
-├───────────────┼──────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────┤
-│ 5r5vavpp46aya │ DexingWithClasspathTransform │ androidx.compose.material:material-icons-extended-android:1.6.3 [artifactType=android-dex] │  2m 9.83s │
-└───────────────┴──────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────┴───────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                Slowest Artifact Transforms                                                                │
+├─────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────┤
+│                         Slowest Artifact transform                          │                     Slowest Artifact transform by type                      │
+├─────────────────────────────────────────────────────────────────┬───────────┼─────────────────────────────────────────────────────────────────┬───────────┤
+│ DexingWithClasspathTransform                                    │           │ DexingWithClasspathTransform                                    │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 16.96s │ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 16.96s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=android-dex]                                      │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ AsmClassesTransform                                             │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 15.27s │ androidx.compose.material:material-icons-extended-android:1.6.3 │    19.25s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=android-asm-instrumented-jars]                    │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ JacocoTransform                                                 │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 14.13s │ androidx.compose.material:material-icons-extended-android:1.6.3 │    18.94s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=jacoco-asm-instrumented-jars]                     │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ ClasspathEntrySnapshotTransform                                 │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 12.75s │ kotlin-compiler-31.4.0.jar                                      │     7.98s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=classpath-entry-snapshot]                         │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ ExtractAarTransform                                             │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │  2m 11.6s │ androidx.compose.material:material-icons-extended-android:1.6.3 │     7.21s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=android-exploded-aar]                             │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ AarTransform                                                    │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 10.81s │ androidx.compose.ui:ui-text-android:1.7.0-alpha06               │     6.87s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=android-aar-metadata]                             │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ BuildToolsApiClasspathEntrySnapshotTransform                    │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 10.37s │ kotlin-compiler-31.4.0.jar                                      │      6.6s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=classpath-entry-snapshot]                         │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ AarToClassTransform                                             │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 10.16s │ androidx.compose.material:material-icons-extended-android:1.6.3 │     4.92s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=android-classes-jar]                              │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ AggregatedPackagesTransform                                     │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │ 2m 10.12s │ android.jar                                                     │     3.81s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=aggregated-jar-for-hilt]                          │           │
+├─────────────────────────────────────────────────────────────────┼───────────┼─────────────────────────────────────────────────────────────────┼───────────┤
+│ DexingWithClasspathTransform                                    │           │ IdentityTransform                                               │           │
+│ androidx.compose.material:material-icons-extended-android:1.6.3 │  2m 9.83s │ metrics-performance-1.0.0-alpha04-api.jar                       │     2.95s │
+│ [artifactType=android-dex]                                      │           │ [artifactType=android-classes|android-classes-jar]              │           │
+└─────────────────────────────────────────────────────────────────┴───────────┴─────────────────────────────────────────────────────────────────┴───────────┘
