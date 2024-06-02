@@ -1,5 +1,5 @@
 # ArtifactTransformReport
-This project provides a cli or devepency designed to retrieve and display statistics of artifact transforms executed in a Gradle project. By leveraging the Develocity API, this tool offers detailed insights into the performance and behavior of artifact transforms.
+This project provides a cli or dependency designed to retrieve and display statistics of artifact transforms executed in a Gradle project. By leveraging the Develocity API, this tool offers detailed insights into the performance and behavior of artifact transforms.
 
 ## CLI
 
