@@ -38,30 +38,39 @@ class SlowestView(transforms: List<ArtifactTransform>) {
                     columnMetricHeaderWithSpan("Slowest Artifact transform")
                     columnMetricHeaderWithSpan("Slowest Artifact transform by type")
                 }
-
-                for (i in 0 until slowDuration.size) {
+                val maxSize = maxOf(slowDuration.size, slowDurationByType.size)
+                for (i in 0 until maxSize) {
                     row {
-                        labelMetric(
-                            slowDuration[i].transformActionType.extractName() + "\n" + slowDuration[i].artifactTransformExecutionName.replace(
-                                " ",
-                                "\n"
+                        if (i < slowDuration.size) {
+                            labelMetric(
+                                slowDuration[i].transformActionType.extractName() + "\n" + slowDuration[i].artifactTransformExecutionName.replace(
+                                    " ",
+                                    "\n"
+                                )
                             )
-                        )
-                        valueMetric(
-                            slowDuration[i].duration.toInt().roundMilliseconds()
-                                .toDuration(DurationUnit.MILLISECONDS)
-                        )
-
-                        labelMetric(
-                            slowDurationByType[i]!!.transformActionType.extractName() + "\n" + slowDurationByType[i]!!.artifactTransformExecutionName.replace(
-                                " ",
-                                "\n"
+                            valueMetric(
+                                slowDuration[i].duration.toInt().roundMilliseconds()
+                                    .toDuration(DurationUnit.MILLISECONDS)
                             )
-                        )
-                        valueMetric(
-                            slowDurationByType[i]!!.duration.toInt().roundMilliseconds()
-                                .toDuration(DurationUnit.MILLISECONDS)
-                        )
+                        } else {
+                            cell("")
+                            cell("")
+                        }
+                        if (i < slowDurationByType.size) {
+                            labelMetric(
+                                slowDurationByType[i]!!.transformActionType.extractName() + "\n" + slowDurationByType[i]!!.artifactTransformExecutionName.replace(
+                                    " ",
+                                    "\n"
+                                )
+                            )
+                            valueMetric(
+                                slowDurationByType[i]!!.duration.toInt().roundMilliseconds()
+                                    .toDuration(DurationUnit.MILLISECONDS)
+                            )
+                        } else {
+                            cell("")
+                            cell("")
+                        }
                     }
                 }
             }
