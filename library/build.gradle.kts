@@ -8,7 +8,7 @@ group = "io.github.cdsap"
 version = "0.1"
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     api("io.github.cdsap:geapi-data:0.2.7")
     implementation("org.slf4j:slf4j-simple:1.6.1")
     testImplementation(kotlin("test"))

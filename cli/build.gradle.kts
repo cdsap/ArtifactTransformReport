@@ -20,7 +20,7 @@ fatBinary {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation(project(":library"))
     implementation("org.slf4j:slf4j-simple:1.6.1")
     implementation("com.jakewharton.picnic:picnic:0.6.0")
