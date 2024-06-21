@@ -26,7 +26,7 @@ dependencies {
     implementation("com.jakewharton.picnic:picnic:0.6.0")
     implementation("com.github.ajalt.clikt:clikt:3.5.4")
     implementation("org.nield:kotlin-statistics:1.2.1")
-    implementation("com.google.code.gson:gson:2.8.9")
+    implementation("com.google.code.gson:gson:2.11.0")
     testImplementation(kotlin("test"))
 }
 
