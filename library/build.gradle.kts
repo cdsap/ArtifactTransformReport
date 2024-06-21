@@ -10,7 +10,7 @@ version = "0.1"
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     api("io.github.cdsap:geapi-data:0.2.7")
-    implementation("org.slf4j:slf4j-simple:1.7.36")
+    implementation("org.slf4j:slf4j-simple:2.0.13")
     testImplementation(kotlin("test"))
 }
 
