@@ -64,7 +64,7 @@ publishing {
                 name.set("artifacttransform")
                 url.set("https://github.com/cdsap/ArtifactTransformReport/")
                 description.set(
-                    "Retrieve Artifact Transforms form Develocity"
+                    "Retrieve Artifact Transforms from Develocity"
                 )
                 licenses {
                     license {
