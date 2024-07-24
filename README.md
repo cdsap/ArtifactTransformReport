@@ -127,7 +127,7 @@ Where:
 ```
 ./gradlew :cli:fatBinary
 cd cli
-./artifacttransfrom --api-key=$KEY --url=$URL --project nowinandroid
+./artifacttransform --api-key=$KEY --url=$URL --project nowinandroid
 ```
 ### Parameters aggregating multiple builds
 
