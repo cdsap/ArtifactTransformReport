@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "1.9.25"
     `maven-publish`
     `signing`
+    id("com.vanniktech.maven.publish") version "0.33.0"
 }
 
 group = "io.github.cdsap"
@@ -23,66 +24,37 @@ configure<JavaPluginExtension> {
     withSourcesJar()
 }
 
-publishing {
-    repositories {
-        maven {
-            name = "Snapshots"
-            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates("io.github.cdsap", "artifacttransform", "0.1")
 
-            credentials {
-                username = System.getenv("USERNAME_SNAPSHOT")
-                password = System.getenv("PASSWORD_SNAPSHOT")
+    pom {
+        scm {
+            connection.set("scm:git:git://github.com/cdsap/ArtifactTransformReport/")
+            url.set("https://github.com/cdsap/ArtifactTransformReport/")
+        }
+        name.set("artifacttransform")
+        url.set("https://github.com/cdsap/ArtifactTransformReport/")
+        description.set(
+            "Retrieve Artifact Transforms from Develocity"
+        )
+        licenses {
+            license {
+                name.set("The MIT License (MIT)")
+                url.set("https://opensource.org/licenses/MIT")
+                distribution.set("repo")
             }
         }
-        maven {
-            name = "Release"
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-
-            credentials {
-                username = System.getenv("USERNAME_SNAPSHOT")
-                password = System.getenv("PASSWORD_SNAPSHOT")
-            }
-        }
-    }
-    publications {
-        create<MavenPublication>("libPublication") {
-            from(components["java"])
-            artifactId = "artifacttransform"
-            versionMapping {
-                usage("java-api") {
-                    fromResolutionOf("runtimeClasspath")
-                }
-                usage("java-runtime") {
-                    fromResolutionResult()
-                }
-            }
-            pom {
-                scm {
-                    connection.set("scm:git:git://github.com/cdsap/ArtifactTransformReport/")
-                    url.set("https://github.com/cdsap/ArtifactTransformReport/")
-                }
-                name.set("artifacttransform")
-                url.set("https://github.com/cdsap/ArtifactTransformReport/")
-                description.set(
-                    "Retrieve Artifact Transforms from Develocity"
-                )
-                licenses {
-                    license {
-                        name.set("The MIT License (MIT)")
-                        url.set("https://opensource.org/licenses/MIT")
-                        distribution.set("repo")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("cdsap")
-                        name.set("Inaki Villar")
-                    }
-                }
+        developers {
+            developer {
+                id.set("cdsap")
+                name.set("Inaki Villar")
             }
         }
     }
 }
+
 
 if (extra.has("signing.keyId")) {
     afterEvaluate {
