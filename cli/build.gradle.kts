@@ -1,7 +1,7 @@
 
 
 plugins {
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.2.10"
     application
     id("io.github.cdsap.fatbinary") version "1.0"
     id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
