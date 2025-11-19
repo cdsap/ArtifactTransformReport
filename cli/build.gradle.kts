@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm") version "2.2.0"
     application
     id("io.github.cdsap.fatbinary") version "1.0"
-    id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
+    id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
 }
 
 group = "org.example"
