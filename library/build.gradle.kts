@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.2.21"
     `maven-publish`
     `signing`
-    id("com.vanniktech.maven.publish") version "0.35.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
 group = "io.github.cdsap"
