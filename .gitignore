@@ -17,6 +17,7 @@ replay*
 single-*
 summary-*
 artifact-transforms-*.csv
+artifact-transforms-*.html
 cli/artifacttransform
 
 

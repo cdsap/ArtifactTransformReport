@@ -105,6 +105,12 @@ The cli summarizes the information in the console including the following sectio
 #### Summary text file
 Text file with the same information displayed in the console
 
+#### HTML report
+A self-contained, interactive HTML report (`artifact-transforms-<timestamp>.html`) with charts for
+duration/count by type, the avoidance-outcome breakdown, cache-effectiveness (avoidable misses),
+changed-attribute transitions, slowest transforms, dependencies, and per-build-scan duration.
+Chart.js is inlined, so the report renders offline with no external requests.
+
 #### CSV
 Complete list of artifact transforms by entity:
 ```csv
