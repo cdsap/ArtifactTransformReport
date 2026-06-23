@@ -24,7 +24,7 @@ dependencies {
     implementation(project(":library"))
     implementation("org.slf4j:slf4j-simple:2.0.17")
     implementation("com.jakewharton.picnic:picnic:0.7.0")
-    implementation("com.github.ajalt.clikt:clikt:4.4.0")
+    implementation("com.github.ajalt.clikt:clikt:5.1.0")
     implementation("org.nield:kotlin-statistics:1.2.1")
     implementation("com.google.code.gson:gson:2.13.2")
     testImplementation(kotlin("test"))
