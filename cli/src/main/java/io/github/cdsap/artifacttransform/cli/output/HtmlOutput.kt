@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import io.github.cdsap.artifacttransform.aggregatedCacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.artifactLevels
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
-import io.github.cdsap.artifacttransform.cacheEffectivenessByTransformActionType
 import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.dependencySortedByDuration
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
@@ -12,9 +11,9 @@ import io.github.cdsap.artifacttransform.durationByAvoidanceOutcome
 import io.github.cdsap.artifacttransform.durationByBuildScan
 import io.github.cdsap.artifacttransform.durationByTransformActionType
 import io.github.cdsap.artifacttransform.extractName
+import io.github.cdsap.artifacttransform.medianDurationByTransformActionType
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
-import io.github.cdsap.artifacttransform.totalAvoidableMissDuration
 import io.github.cdsap.artifacttransform.topologicalArtifactOrder
 import io.github.cdsap.artifacttransform.totalByTransformActionType
 import io.github.cdsap.geapi.client.model.ArtifactTransform
@@ -57,7 +56,6 @@ class HtmlOutput(
 
         val buildScans = transforms.groupBy { it.buildScanId }.count()
         val hitRate = (transforms.overallCacheHitRate() * 100).roundTo(2)
-        val avoidableMs = transforms.totalAvoidableMissDuration().toLong()
 
         return buildString {
             append(
@@ -103,7 +101,6 @@ class HtmlOutput(
                   <div class="stat"><div class="v">${transforms.size}</div><div class="l">Total transforms</div></div>
                   <div class="stat"><div class="v">$buildScans</div><div class="l">Build scans</div></div>
                   <div class="stat"><div class="v">$hitRate%</div><div class="l">Cache hit rate</div></div>
-                  <div class="stat"><div class="v">${formatMs(avoidableMs)}</div><div class="l">Avoidable miss duration</div></div>
                   <div class="stat"><div class="v">${formatBytes(totalCacheSizeBytes())}</div><div class="l">Total cache size</div></div>
                 </section>
                 ${pipelineSection()}
@@ -219,9 +216,11 @@ class HtmlOutput(
             val cx1 = x1 + colW / 3
             val cx2 = x2 - colW / 3
             val strokeWidth = 1.0 + 5.0 * edge.totalDuration / maxDuration
+            val edgeTitle = "${edge.from} → ${edge.to} · ${edge.count} transforms · ${edge.totalDuration}ms"
             sb.append(
                 """<path d="M$x1,$y1 C$cx1,$y1 $cx2,$y2 ${x2 - 7},$y2" """ +
-                    """fill="none" stroke="#5a6072" stroke-width="${"%.1f".format(strokeWidth)}" stroke-opacity="0.55" marker-end="url(#arrow)"/>"""
+                    """fill="none" stroke="#5a6072" stroke-width="${"%.1f".format(strokeWidth)}" stroke-opacity="0.55" marker-end="url(#arrow)">""" +
+                    """<title>${edgeTitle.escapeXml()}</title></path>"""
             )
         }
 
@@ -253,8 +252,14 @@ class HtmlOutput(
 
         transforms.durationByTransformActionType().take(10).let { data ->
             addSpec(
-                "durationByType", "bar", "x", "Duration by transform type",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
+                "durationByType", "bar", "x", "Total duration by transform type",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Total duration (ms)"
+            )
+        }
+        transforms.medianDurationByTransformActionType().take(10).let { data ->
+            addSpec(
+                "medianByType", "bar", "x", "Median duration by transform type",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Median duration (ms)"
             )
         }
         transforms.totalByTransformActionType().take(10).let { data ->
@@ -269,14 +274,6 @@ class HtmlOutput(
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
             )
         }
-        transforms.cacheEffectivenessByTransformActionType()
-            .filter { it.avoidableMissDuration > 0 }.take(10).let { data ->
-                addSpec(
-                    "avoidableMisses", "bar", "y", "Avoidable cache-miss duration by type",
-                    data.map { it.transformActionType.extractName() },
-                    data.map { it.avoidableMissDuration.toLong() }, "Avoidable miss (ms)"
-                )
-            }
         transforms.durationByAttributeTransition().take(10).let { data ->
             addSpec(
                 "attrTransitions", "bar", "y", "Duration by changed-attribute transition",
@@ -328,13 +325,6 @@ class HtmlOutput(
         bytes >= 1_048_576 -> "${(bytes / 1_048_576.0).roundTo(1)} MB"
         bytes >= 1_024 -> "${(bytes / 1_024.0).roundTo(1)} KB"
         else -> "$bytes B"
-    }
-
-    private fun formatMs(ms: Long): String = when {
-        ms >= 3_600_000 -> "${(ms / 3_600_000.0).roundTo(1)}h"
-        ms >= 60_000 -> "${(ms / 60_000.0).roundTo(1)}m"
-        ms >= 1_000 -> "${(ms / 1_000.0).roundTo(1)}s"
-        else -> "${ms}ms"
     }
 
     private fun Double.roundTo(decimals: Int): Double {

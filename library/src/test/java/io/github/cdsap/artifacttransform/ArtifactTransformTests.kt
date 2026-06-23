@@ -46,6 +46,23 @@ class ArtifactTransformTests {
     }
 
     @Test
+    fun `test medianDurationByTransformActionType`() {
+        // TransformType1: durations 200, 300 -> median 250; TransformType2: 150, 150 -> 150; TransformType3: 100
+        val median = sampleTransforms.medianDurationByTransformActionType().toMap()
+        assertEquals(250, median["TransformType1"])
+        assertEquals(150, median["TransformType2"])
+        assertEquals(100, median["TransformType3"])
+    }
+
+    @Test
+    fun `test median helper`() {
+        assertEquals(0, emptyList<Int>().median())
+        assertEquals(3, listOf(3).median())
+        assertEquals(3, listOf(1, 3, 5).median())
+        assertEquals(4, listOf(1, 3, 5, 7).median())
+    }
+
+    @Test
     fun `test fingerprintingByTransformActionType`() {
         val fingerprintingList = sampleTransforms.fingerprintingByTransformActionType()
         assertEquals("TransformType1", fingerprintingList[0].first)

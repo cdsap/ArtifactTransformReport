@@ -30,6 +30,19 @@ fun List<ArtifactTransform>.durationByTransformActionType() = this.groupBy { it.
         listOf(Pair(it.first, it.second))
     }
 
+fun List<ArtifactTransform>.medianDurationByTransformActionType(): List<Pair<String, Int>> =
+    this.groupBy { it.transformActionType }
+        .mapValues { (_, values) -> values.map { it.duration.toMillisOrZero() }.median() }
+        .toList()
+        .sortedByDescending { it.second }
+
+internal fun List<Int>.median(): Int {
+    if (isEmpty()) return 0
+    val sorted = sorted()
+    val mid = sorted.size / 2
+    return if (sorted.size % 2 == 1) sorted[mid] else (sorted[mid - 1] + sorted[mid]) / 2
+}
+
 fun List<ArtifactTransform>.fingerprintingByTransformActionType() = this.groupBy { it.transformActionType }
     .mapValues { (_, values) -> values.sumOf { it.fingerprintingDuration.toInt() } }
     .toList()
