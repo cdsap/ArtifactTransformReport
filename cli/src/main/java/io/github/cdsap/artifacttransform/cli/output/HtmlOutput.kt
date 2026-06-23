@@ -226,10 +226,12 @@ class HtmlOutput(
             val (x, y) = pos[node] ?: return@forEach
             val color = palette[(levels[node] ?: 0) % palette.size]
             val label = if (node.length > 24) node.take(23) + "…" else node
+            // wrap node in a <g> with a <title> so hovering anywhere on the box shows the full name
+            sb.append("""<g><title>${node.escapeXml()}</title>""")
             sb.append("""<rect x="$x" y="$y" width="$nodeW" height="$nodeH" rx="7" fill="#1f2330" stroke="$color" stroke-width="1.5"/>""")
             sb.append(
                 """<text x="${x + nodeW / 2}" y="${y + nodeH / 2 + 4}" text-anchor="middle" """ +
-                    """fill="#e5e9f0" font-size="12">${label.escapeXml()}<title>${node.escapeXml()}</title></text>"""
+                    """fill="#e5e9f0" font-size="12">${label.escapeXml()}</text></g>"""
             )
         }
         sb.append("</svg>")
