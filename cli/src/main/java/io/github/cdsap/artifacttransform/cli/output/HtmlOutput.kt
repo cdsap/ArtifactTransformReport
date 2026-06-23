@@ -7,7 +7,6 @@ import io.github.cdsap.artifacttransform.attributeTransitionEdges
 import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.dependencySortedByDuration
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
-import io.github.cdsap.artifacttransform.durationByAvoidanceOutcome
 import io.github.cdsap.artifacttransform.durationByBuildScan
 import io.github.cdsap.artifacttransform.durationByTransformActionType
 import io.github.cdsap.artifacttransform.extractName
@@ -266,12 +265,6 @@ class HtmlOutput(
             addSpec(
                 "countByType", "bar", "x", "Count by transform type",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
-            )
-        }
-        transforms.durationByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "durationByAvoidance", "doughnut", "x", "Duration by avoidance outcome",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
             )
         }
         transforms.durationByAttributeTransition().take(10).let { data ->
