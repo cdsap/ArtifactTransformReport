@@ -1,7 +1,7 @@
 
 
 plugins {
-    kotlin("jvm") version "2.3.20"
+    kotlin("jvm") version "2.4.0"
     application
     id("io.github.cdsap.fatbinary") version "1.0"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
@@ -26,7 +26,7 @@ dependencies {
     implementation("com.jakewharton.picnic:picnic:0.7.0")
     implementation("com.github.ajalt.clikt:clikt:5.1.0")
     implementation("org.nield:kotlin-statistics:1.2.1")
-    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.google.code.gson:gson:2.14.0")
     testImplementation(kotlin("test"))
 }
 
