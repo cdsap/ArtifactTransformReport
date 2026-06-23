@@ -134,9 +134,9 @@ cd cli
 | Name       | Description                              | Default | Required | Example                         |
 |------------|------------------------------------------|---------|----------|---------------------------------|
 | api-key    | String token                             |         | Yes      | --api-key=$DV_KEY               |
-| url        | Gradle Enterprise instance               |         | Yes      | --url=https://ge.acme.dev       |
+| url        | Develocity instance                      |         | Yes      | --url=https://ge.acme.dev       |
 | max-builds | Max builds to be processed               | 100     | No       | --max-builds=500                |
-| project    | Root project in Gradle Enterprise        |         | Yes      | --project=acme                  |
+| project    | Root project in Develocity               |         | Yes      | --project=acme                  |
 | tags       | One or more tags included in the build.  |         | No       | --tags=main --tags=not:local    |
 | user       | Author of the build                      |         | No       | --user=leo                      |
 
@@ -145,7 +145,7 @@ cd cli
 | Name          | Description                | Default | Required | Example                   |
 |---------------|----------------------------|---------|----------|---------------------------|
 | api-key       | String token               |         | Yes      | --api-key=$DV_KEY         |
-| url           | Gradle Enterprise instance |         | Yes      | --url=https://ge.acme.dev |
+| url           | Develocity instance        |         | Yes      | --url=https://ge.acme.dev |
 | build-scan-id | Build scan id              |         | Yes      | --build-scan-id=iwuduw8   |
 
 ## Dependency
