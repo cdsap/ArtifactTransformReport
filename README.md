@@ -20,6 +20,9 @@ The cli summarizes the information in the console including the following sectio
 * Duration by outcome/avoidance outcome
 * Longest Negative Avoidance savings
 * Heaviest cache size Artifact transforms
+* Cache effectiveness by type (hit rate and avoidable cache misses)
+* Duration and count by changed-attribute transition
+* Duration and count by Build Scan
 
 ```kotlin
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐

@@ -124,3 +124,90 @@ fun List<ArtifactTransform>.fingerprintingByOutcome() = this.groupBy { it.outcom
 fun String.extractName(): String {
     return this.substringAfterLast(".")
 }
+
+internal fun String?.toMillisOrZero(): Int = this?.toIntOrNull() ?: 0
+
+// --- Tier 1: cache effectiveness ---
+// avoidanceOutcome values reported by Develocity are prefixed: `avoided_*` (cache hit / up-to-date)
+// vs `executed_*` (the transform actually ran). `executed_cacheable` is an avoidable miss: it ran
+// even though it could have been served from the cache.
+
+fun ArtifactTransform.isAvoided(): Boolean = avoidanceOutcome.startsWith("avoided")
+
+fun ArtifactTransform.isExecuted(): Boolean = avoidanceOutcome.startsWith("executed")
+
+fun ArtifactTransform.isAvoidableMiss(): Boolean = avoidanceOutcome == "executed_cacheable"
+
+data class CacheEffectiveness(
+    val transformActionType: String,
+    val total: Int,
+    val avoided: Int,
+    val executed: Int,
+    val avoidableMisses: Int,
+    val avoidableMissDuration: Int,
+    val hitRate: Double
+)
+
+fun List<ArtifactTransform>.overallCacheHitRate(): Double {
+    val avoided = count { it.isAvoided() }
+    val executed = count { it.isExecuted() }
+    val classified = avoided + executed
+    return if (classified == 0) 0.0 else avoided.toDouble() / classified
+}
+
+fun List<ArtifactTransform>.totalAvoidableMissDuration(): Int =
+    this.filter { it.isAvoidableMiss() }.sumOf { it.duration.toMillisOrZero() }
+
+fun List<ArtifactTransform>.cacheEffectivenessByTransformActionType(): List<CacheEffectiveness> =
+    this.groupBy { it.transformActionType }
+        .map { (type, values) ->
+            val avoided = values.count { it.isAvoided() }
+            val executed = values.count { it.isExecuted() }
+            val classified = avoided + executed
+            val avoidableMisses = values.filter { it.isAvoidableMiss() }
+            CacheEffectiveness(
+                transformActionType = type,
+                total = values.size,
+                avoided = avoided,
+                executed = executed,
+                avoidableMisses = avoidableMisses.size,
+                avoidableMissDuration = avoidableMisses.sumOf { it.duration.toMillisOrZero() },
+                hitRate = if (classified == 0) 0.0 else avoided.toDouble() / classified
+            )
+        }
+        .sortedByDescending { it.avoidableMissDuration }
+
+// --- Tier 1: changed-attribute transitions ---
+
+fun ArtifactTransform.attributeTransitionLabel(): String =
+    if (changedAttributes.isEmpty()) {
+        "n/a"
+    } else {
+        changedAttributes.joinToString(", ") { "${it.name}: ${it.from} -> ${it.to}" }
+    }
+
+fun List<ArtifactTransform>.durationByAttributeTransition(): List<Pair<String, Int>> =
+    this.groupBy { it.attributeTransitionLabel() }
+        .mapValues { (_, values) -> values.sumOf { it.duration.toMillisOrZero() } }
+        .toList()
+        .sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.countByAttributeTransition(): List<Pair<String, Int>> =
+    this.groupingBy { it.attributeTransitionLabel() }
+        .eachCount()
+        .toList()
+        .sortedByDescending { it.second }
+
+// --- Tier 1: per-build-scan aggregation ---
+
+fun List<ArtifactTransform>.durationByBuildScan(): List<Pair<String, Int>> =
+    this.groupBy { it.buildScanId ?: "unknown" }
+        .mapValues { (_, values) -> values.sumOf { it.duration.toMillisOrZero() } }
+        .toList()
+        .sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.countByBuildScan(): List<Pair<String, Int>> =
+    this.groupingBy { it.buildScanId ?: "unknown" }
+        .eachCount()
+        .toList()
+        .sortedByDescending { it.second }

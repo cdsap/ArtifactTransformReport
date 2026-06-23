@@ -1,6 +1,7 @@
 package io.github.cdsap.artifacttransform
 
 import io.github.cdsap.geapi.client.model.ArtifactTransform
+import io.github.cdsap.geapi.client.model.ChangedAttributes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.time.DurationUnit
@@ -140,5 +141,82 @@ class ArtifactTransformTests {
         val fingerprintingByOutcome = sampleTransforms.fingerprintingByOutcome()
         assertEquals(120, fingerprintingByOutcome["Success"])
         assertEquals(200, fingerprintingByOutcome["Failure"])
+    }
+
+    private val jarToSnapshot = arrayOf(ChangedAttributes("artifactType", "jar", "classpath-entry-snapshot"))
+
+    private val cacheTransforms = listOf(
+        ArtifactTransform("e1", "TypeA", "a.jar", "from_cache", "avoided_from_local_cache", "10", null, "1", "100", jarToSnapshot, "build1"),
+        ArtifactTransform("e2", "TypeA", "b.jar", "success", "executed_cacheable", "100", null, "2", "200", jarToSnapshot, "build1"),
+        ArtifactTransform("e3", "TypeA", "c.jar", "success", "executed_cacheable", "200", null, "3", "300", jarToSnapshot, "build2"),
+        ArtifactTransform("e4", "TypeB", "d.jar", "success", "executed_not_cacheable", "50", null, "4", "400", arrayOf(), "build2"),
+        ArtifactTransform("e5", "TypeB", "e.jar", "up_to_date", "avoided_up_to_date", "5", null, "5", "500", arrayOf(), "build2"),
+    )
+
+    @Test
+    fun `test overallCacheHitRate`() {
+        // avoided: e1, e5 = 2; executed: e2, e3, e4 = 3 -> 2 / 5
+        assertEquals(0.4, cacheTransforms.overallCacheHitRate())
+    }
+
+    @Test
+    fun `test totalAvoidableMissDuration`() {
+        // executed_cacheable: e2 (100) + e3 (200)
+        assertEquals(300, cacheTransforms.totalAvoidableMissDuration())
+    }
+
+    @Test
+    fun `test cacheEffectivenessByTransformActionType`() {
+        val effectiveness = cacheTransforms.cacheEffectivenessByTransformActionType()
+        // sorted by avoidableMissDuration desc -> TypeA first
+        val typeA = effectiveness[0]
+        assertEquals("TypeA", typeA.transformActionType)
+        assertEquals(3, typeA.total)
+        assertEquals(1, typeA.avoided)
+        assertEquals(2, typeA.executed)
+        assertEquals(2, typeA.avoidableMisses)
+        assertEquals(300, typeA.avoidableMissDuration)
+        assertEquals(1.0 / 3, typeA.hitRate)
+
+        val typeB = effectiveness[1]
+        assertEquals("TypeB", typeB.transformActionType)
+        assertEquals(0, typeB.avoidableMisses)
+        assertEquals(0, typeB.avoidableMissDuration)
+        assertEquals(0.5, typeB.hitRate)
+    }
+
+    @Test
+    fun `test durationByAttributeTransition`() {
+        val byTransition = cacheTransforms.durationByAttributeTransition()
+        // jar -> classpath-entry-snapshot: e1 (10) + e2 (100) + e3 (200) = 310
+        assertEquals("artifactType: jar -> classpath-entry-snapshot", byTransition[0].first)
+        assertEquals(310, byTransition[0].second)
+        // empty changed attributes grouped as n/a: e4 (50) + e5 (5) = 55
+        assertEquals("n/a", byTransition[1].first)
+        assertEquals(55, byTransition[1].second)
+    }
+
+    @Test
+    fun `test countByAttributeTransition`() {
+        val counts = cacheTransforms.countByAttributeTransition().toMap()
+        assertEquals(3, counts["artifactType: jar -> classpath-entry-snapshot"])
+        assertEquals(2, counts["n/a"])
+    }
+
+    @Test
+    fun `test durationByBuildScan`() {
+        val byBuild = cacheTransforms.durationByBuildScan()
+        // build2: e3 (200) + e4 (50) + e5 (5) = 255; build1: e1 (10) + e2 (100) = 110
+        assertEquals("build2", byBuild[0].first)
+        assertEquals(255, byBuild[0].second)
+        assertEquals("build1", byBuild[1].first)
+        assertEquals(110, byBuild[1].second)
+    }
+
+    @Test
+    fun `test countByBuildScan`() {
+        val counts = cacheTransforms.countByBuildScan().toMap()
+        assertEquals(3, counts["build2"])
+        assertEquals(2, counts["build1"])
     }
 }

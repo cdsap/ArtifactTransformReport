@@ -16,6 +16,8 @@ out/
 replay*
 single-*
 summary-*
+artifact-transforms-*.csv
+cli/artifacttransform
 
 
 !**/src/main/**/out/

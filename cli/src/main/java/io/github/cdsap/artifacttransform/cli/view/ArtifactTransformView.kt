@@ -17,6 +17,9 @@ class ArtifactTransformView(
         val dependencyView = DependencyView(transforms)
         val cacheSizeView = CacheSizeView(transforms)
         val slowestView = SlowestView(transforms)
+        val cacheEffectivenessView = CacheEffectivenessView(transforms)
+        val attributeTransitionView = AttributeTransitionView(transforms)
+        val buildScanView = BuildScanView(transforms)
 
         outcomeView.print()
         avoidanceView.print()
@@ -25,6 +28,9 @@ class ArtifactTransformView(
         dependencyView.print()
         cacheSizeView.print()
         slowestView.print()
+        cacheEffectivenessView.print()
+        attributeTransitionView.print()
+        buildScanView.print()
 
         val prefixFile = if (singleReport) "single-" else ""
         val txt = "${prefixFile}summary-artifact-transforms-${System.currentTimeMillis()}.txt"
@@ -42,7 +48,13 @@ class ArtifactTransformView(
                 "\n" +
                 cacheSizeView.generateReport().renderText() +
                 "\n" +
-                slowestView.generateReport().renderText()
+                slowestView.generateReport().renderText() +
+                "\n" +
+                cacheEffectivenessView.generateReport().renderText() +
+                "\n" +
+                attributeTransitionView.generateReport().renderText() +
+                "\n" +
+                buildScanView.generateReport().renderText()
         )
         val endTime = System.currentTimeMillis()
         println("File $txt created in ${endTime - startTimestamp} ms")
