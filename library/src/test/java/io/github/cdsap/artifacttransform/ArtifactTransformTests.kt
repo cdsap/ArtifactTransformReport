@@ -219,4 +219,47 @@ class ArtifactTransformTests {
         assertEquals(3, counts["build2"])
         assertEquals(2, counts["build1"])
     }
+
+    // aar -> exploded -> jar -> classes ; jar -> snapshot
+    private fun edge(from: String, to: String, duration: String) =
+        ArtifactTransform("e", "T", "a", "success", "executed_cacheable", duration, null, "0", "0", arrayOf(ChangedAttributes("artifactType", from, to)), "b")
+
+    private val pipeline = listOf(
+        edge("aar", "exploded", "10"),
+        edge("aar", "exploded", "20"),
+        edge("exploded", "jar", "30"),
+        edge("jar", "classes", "40"),
+        edge("jar", "snapshot", "5"),
+    )
+
+    @Test
+    fun `test attributeTransitionEdges aggregates count and duration`() {
+        val edges = pipeline.attributeTransitionEdges()
+        val aarToExploded = edges.first { it.from == "aar" && it.to == "exploded" }
+        assertEquals(2, aarToExploded.count)
+        assertEquals(30, aarToExploded.totalDuration)
+        // sorted by total duration descending: jar->classes (40) is first
+        assertEquals("jar", edges[0].from)
+        assertEquals("classes", edges[0].to)
+    }
+
+    @Test
+    fun `test topologicalArtifactOrder`() {
+        val order = pipeline.attributeTransitionEdges().topologicalArtifactOrder()
+        // sources before sinks
+        assert(order.indexOf("aar") < order.indexOf("exploded"))
+        assert(order.indexOf("exploded") < order.indexOf("jar"))
+        assert(order.indexOf("jar") < order.indexOf("classes"))
+        assert(order.indexOf("jar") < order.indexOf("snapshot"))
+    }
+
+    @Test
+    fun `test artifactLevels`() {
+        val levels = pipeline.attributeTransitionEdges().artifactLevels()
+        assertEquals(0, levels["aar"])
+        assertEquals(1, levels["exploded"])
+        assertEquals(2, levels["jar"])
+        assertEquals(3, levels["classes"])
+        assertEquals(3, levels["snapshot"])
+    }
 }

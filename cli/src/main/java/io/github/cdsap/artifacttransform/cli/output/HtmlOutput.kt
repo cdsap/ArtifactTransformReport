@@ -1,6 +1,8 @@
 package io.github.cdsap.artifacttransform.cli.output
 
 import com.google.gson.Gson
+import io.github.cdsap.artifacttransform.artifactLevels
+import io.github.cdsap.artifacttransform.attributeTransitionEdges
 import io.github.cdsap.artifacttransform.cacheEffectivenessByTransformActionType
 import io.github.cdsap.artifacttransform.dependencySortedByDuration
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
@@ -11,6 +13,7 @@ import io.github.cdsap.artifacttransform.extractName
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
 import io.github.cdsap.artifacttransform.totalAvoidableMissDuration
+import io.github.cdsap.artifacttransform.topologicalArtifactOrder
 import io.github.cdsap.artifacttransform.totalByTransformActionType
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import java.io.File
@@ -80,6 +83,11 @@ class HtmlOutput(
                   .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
                   .card h2 { margin:0 0 14px; font-size:14px; font-weight:600; }
                   .canvas-wrap { position:relative; height:320px; }
+                  .card h2 { overflow-wrap:anywhere; }
+                  .pipeline { margin:0 32px 20px; }
+                  .pipeline .scroll { overflow:auto; }
+                  .pipeline svg { display:block; }
+                  .pipeline .hint { color:var(--muted); font-size:12px; margin:0 0 12px; }
                   footer { color:var(--muted); font-size:12px; padding:0 32px 32px; }
                 </style>
                 <script>$chartJs</script>
@@ -95,6 +103,7 @@ class HtmlOutput(
                   <div class="stat"><div class="v">$hitRate%</div><div class="l">Cache hit rate</div></div>
                   <div class="stat"><div class="v">${formatMs(avoidableMs)}</div><div class="l">Avoidable miss duration</div></div>
                 </section>
+                ${pipelineSection()}
                 <main class="grid" id="grid"></main>
                 <footer>Durations shown in milliseconds. Charts are interactive (hover for details).</footer>
                 <script>
@@ -108,6 +117,17 @@ class HtmlOutput(
                     const canvas = document.createElement('canvas'); canvas.id = c.id;
                     wrap.appendChild(canvas); card.appendChild(wrap); grid.appendChild(card);
                     const horizontal = c.indexAxis === 'y';
+                    function trunc(s) { return s.length > 28 ? s.slice(0, 27) + '…' : s; }
+                    const catTicks = {
+                      color: '#9aa3b2', autoSkip: false,
+                      callback: function (value) { return trunc(this.getLabelForValue(value)); }
+                    };
+                    const valTicks = { color: '#9aa3b2' };
+                    let scales = {};
+                    if (c.type !== 'doughnut') {
+                      scales[horizontal ? 'y' : 'x'] = { ticks: catTicks, grid: { color: '#2a2e3a' } };
+                      scales[horizontal ? 'x' : 'y'] = { ticks: valTicks, grid: { color: '#2a2e3a' }, beginAtZero: true };
+                    }
                     new Chart(canvas, {
                       type: c.type,
                       data: {
@@ -126,12 +146,10 @@ class HtmlOutput(
                         indexAxis: horizontal ? 'y' : 'x',
                         responsive: true, maintainAspectRatio: false,
                         plugins: {
-                          legend: { display: c.type === 'doughnut', labels: { color: '#9aa3b2' } }
+                          legend: { display: c.type === 'doughnut', labels: { color: '#9aa3b2' } },
+                          tooltip: { callbacks: { title: function (items) { return items[0].label; } } }
                         },
-                        scales: c.type === 'doughnut' ? {} : {
-                          x: { ticks: { color: '#9aa3b2' }, grid: { color: '#2a2e3a' } },
-                          y: { ticks: { color: '#9aa3b2' }, grid: { color: '#2a2e3a' } }
-                        }
+                        scales: scales
                       }
                     });
                   });
@@ -142,6 +160,84 @@ class HtmlOutput(
             )
         }
     }
+
+    private fun pipelineSection(): String {
+        val svg = pipelineSvg() ?: return ""
+        return """
+            <section class="card pipeline">
+              <h2>Artifact transform pipeline</h2>
+              <p class="hint">Inferred from changed-attribute transitions: each box is an artifact type, each arrow a transform turning one type into another (left to right = processing order). Arrow thickness reflects total duration.</p>
+              <div class="scroll">$svg</div>
+            </section>
+        """.trimIndent()
+    }
+
+    private fun pipelineSvg(): String? {
+        val edges = transforms.attributeTransitionEdges().take(24)
+        if (edges.isEmpty()) return null
+
+        val levels = edges.artifactLevels()
+        val order = edges.topologicalArtifactOrder()
+        val nodes = (edges.map { it.from } + edges.map { it.to }).distinct()
+        val byLevel = nodes.groupBy { levels[it] ?: 0 }.toSortedMap()
+
+        val colW = 240
+        val rowH = 60
+        val nodeW = 185
+        val nodeH = 36
+        val marginX = 16
+        val marginY = 16
+        val maxLevel = byLevel.keys.maxOrNull() ?: 0
+        val maxRows = byLevel.values.maxOf { it.size }
+        val width = marginX * 2 + maxLevel * colW + nodeW
+        val height = marginY * 2 + (maxRows - 1) * rowH + nodeH
+
+        val pos = HashMap<String, Pair<Int, Int>>()
+        byLevel.forEach { (level, levelNodes) ->
+            levelNodes.sortedBy { order.indexOf(it) }.forEachIndexed { i, node ->
+                pos[node] = (marginX + level * colW) to (marginY + i * rowH)
+            }
+        }
+
+        val palette = listOf("#6aa6ff", "#5ad19a", "#f7c948", "#ef6f6c", "#b48ef0", "#4fd1c5", "#f6995c")
+        val maxDuration = edges.maxOf { it.totalDuration }.coerceAtLeast(1)
+
+        val sb = StringBuilder()
+        sb.append("""<svg width="$width" height="$height" viewBox="0 0 $width $height" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">""")
+        sb.append("""<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5a6072"/></marker></defs>""")
+
+        edges.forEach { edge ->
+            val from = pos[edge.from] ?: return@forEach
+            val to = pos[edge.to] ?: return@forEach
+            val x1 = from.first + nodeW
+            val y1 = from.second + nodeH / 2
+            val x2 = to.first
+            val y2 = to.second + nodeH / 2
+            val cx1 = x1 + colW / 3
+            val cx2 = x2 - colW / 3
+            val strokeWidth = 1.0 + 5.0 * edge.totalDuration / maxDuration
+            sb.append(
+                """<path d="M$x1,$y1 C$cx1,$y1 $cx2,$y2 ${x2 - 7},$y2" """ +
+                    """fill="none" stroke="#5a6072" stroke-width="${"%.1f".format(strokeWidth)}" stroke-opacity="0.55" marker-end="url(#arrow)"/>"""
+            )
+        }
+
+        nodes.forEach { node ->
+            val (x, y) = pos[node] ?: return@forEach
+            val color = palette[(levels[node] ?: 0) % palette.size]
+            val label = if (node.length > 24) node.take(23) + "…" else node
+            sb.append("""<rect x="$x" y="$y" width="$nodeW" height="$nodeH" rx="7" fill="#1f2330" stroke="$color" stroke-width="1.5"/>""")
+            sb.append(
+                """<text x="${x + nodeW / 2}" y="${y + nodeH / 2 + 4}" text-anchor="middle" """ +
+                    """fill="#e5e9f0" font-size="12">${label.escapeXml()}<title>${node.escapeXml()}</title></text>"""
+            )
+        }
+        sb.append("</svg>")
+        return sb.toString()
+    }
+
+    private fun String.escapeXml(): String =
+        replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     private fun buildCharts(): List<ChartSpec> {
         val specs = mutableListOf<ChartSpec>()

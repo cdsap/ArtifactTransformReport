@@ -211,3 +211,63 @@ fun List<ArtifactTransform>.countByBuildScan(): List<Pair<String, Int>> =
         .eachCount()
         .toList()
         .sortedByDescending { it.second }
+
+// --- Tier 1: artifact transform pipeline (changed-attribute graph) ---
+// Each transform turns an input artifact type (`from`) into an output type (`to`). One transform's
+// output type is consumed as the input of the next, so the aggregated from->to edges describe the
+// build's artifact transform pipeline as a directed graph that can be ordered topologically.
+
+data class TransitionEdge(
+    val from: String,
+    val to: String,
+    val count: Int,
+    val totalDuration: Int
+)
+
+fun List<ArtifactTransform>.attributeTransitionEdges(): List<TransitionEdge> =
+    this.flatMap { transform ->
+        transform.changedAttributes.map { Triple(it.from, it.to, transform.duration.toMillisOrZero()) }
+    }
+        .groupBy { it.first to it.second }
+        .map { (key, grouped) -> TransitionEdge(key.first, key.second, grouped.size, grouped.sumOf { it.third }) }
+        .sortedByDescending { it.totalDuration }
+
+/**
+ * Topological ordering of artifact types implied by the transition edges (sources first, sinks last).
+ * Nodes left over in cycles are appended in stable order so the result always contains every node.
+ */
+fun List<TransitionEdge>.topologicalArtifactOrder(): List<String> {
+    val nodes = (map { it.from } + map { it.to }).distinct()
+    val outgoing = groupBy { it.from }
+    val indegree = nodes.associateWith { node -> count { it.to == node } }.toMutableMap()
+    val queue = ArrayDeque(nodes.filter { indegree[it] == 0 })
+    val order = mutableListOf<String>()
+    while (queue.isNotEmpty()) {
+        val node = queue.removeFirst()
+        order += node
+        outgoing[node]?.forEach { edge ->
+            val remaining = (indegree[edge.to] ?: 0) - 1
+            indegree[edge.to] = remaining
+            if (remaining == 0) queue.addLast(edge.to)
+        }
+    }
+    nodes.filterNot { order.contains(it) }.forEach { order += it }
+    return order
+}
+
+/**
+ * Depth of each artifact type in the pipeline (longest path from a source), used to lay the graph
+ * out in columns. Computed by relaxing edges in topological order.
+ */
+fun List<TransitionEdge>.artifactLevels(): Map<String, Int> {
+    val order = topologicalArtifactOrder()
+    val outgoing = groupBy { it.from }
+    val level = order.associateWith { 0 }.toMutableMap()
+    order.forEach { node ->
+        val current = level[node] ?: 0
+        outgoing[node]?.forEach { edge ->
+            if ((level[edge.to] ?: 0) < current + 1) level[edge.to] = current + 1
+        }
+    }
+    return level
+}
