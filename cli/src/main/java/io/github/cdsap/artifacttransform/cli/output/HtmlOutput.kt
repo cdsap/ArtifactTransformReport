@@ -1,9 +1,11 @@
 package io.github.cdsap.artifacttransform.cli.output
 
 import com.google.gson.Gson
+import io.github.cdsap.artifacttransform.aggregatedCacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.artifactLevels
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
 import io.github.cdsap.artifacttransform.cacheEffectivenessByTransformActionType
+import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.dependencySortedByDuration
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
 import io.github.cdsap.artifacttransform.durationByAvoidanceOutcome
@@ -102,6 +104,7 @@ class HtmlOutput(
                   <div class="stat"><div class="v">$buildScans</div><div class="l">Build scans</div></div>
                   <div class="stat"><div class="v">$hitRate%</div><div class="l">Cache hit rate</div></div>
                   <div class="stat"><div class="v">${formatMs(avoidableMs)}</div><div class="l">Avoidable miss duration</div></div>
+                  <div class="stat"><div class="v">${formatBytes(totalCacheSizeBytes())}</div><div class="l">Total cache size</div></div>
                 </section>
                 ${pipelineSection()}
                 <main class="grid" id="grid"></main>
@@ -301,7 +304,30 @@ class HtmlOutput(
                 )
             }
         }
+        transforms.aggregatedCacheSizeByTransformActionType().take(10).let { data ->
+            addSpec(
+                "cacheSizeByType", "bar", "x", "Cache size by transform type",
+                data.map { it.first.extractName() }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+            )
+        }
+        transforms.cacheSizeByTransformActionType().take(10).let { data ->
+            addSpec(
+                "heaviestCache", "bar", "y", "Heaviest cached transforms",
+                data.map { it.first.substringBefore(" [") }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+            )
+        }
         return specs
+    }
+
+    private fun totalCacheSizeBytes(): Long =
+        transforms.filter { it.cacheArtifactSize != null }
+            .sumOf { (it.cacheArtifactSize.toIntOrNull() ?: 0).toLong() }
+
+    private fun formatBytes(bytes: Long): String = when {
+        bytes >= 1_073_741_824 -> "${(bytes / 1_073_741_824.0).roundTo(1)} GB"
+        bytes >= 1_048_576 -> "${(bytes / 1_048_576.0).roundTo(1)} MB"
+        bytes >= 1_024 -> "${(bytes / 1_024.0).roundTo(1)} KB"
+        else -> "$bytes B"
     }
 
     private fun formatMs(ms: Long): String = when {
