@@ -326,6 +326,65 @@ fun List<ArtifactTransform>.durationByModule(): List<Pair<String, Int>> =
         .toList()
         .sortedByDescending { it.second }
 
+// --- Dependency coordinate + per-dependency aggregations (U4) ---
+// For external dependencies the transformSource() prefix is the GAV coordinate (group:name:version).
+
+fun ArtifactTransform.dependencyCoordinate(): String? =
+    transformSource().takeIf { sourceCategory() == "External dependency" }
+
+private fun List<ArtifactTransform>.durationsByDependency(): Map<String, List<Int>> =
+    this.mapNotNull { t -> t.dependencyCoordinate()?.let { it to t.duration.toMillisOrZero() } }
+        .groupBy({ it.first }, { it.second })
+
+fun List<ArtifactTransform>.durationByDependency(): List<Pair<String, Int>> =
+    durationsByDependency().mapValues { it.value.sum() }.toList().sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.countByDependency(): List<Pair<String, Int>> =
+    durationsByDependency().mapValues { it.value.size }.toList().sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.medianDurationByDependency(): List<Pair<String, Int>> =
+    durationsByDependency().mapValues { it.value.median() }.toList().sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.cacheSizeByDependency(): List<Pair<String, Int>> =
+    this.filter { it.cacheArtifactSize != null }
+        .mapNotNull { t -> t.dependencyCoordinate()?.let { it to t.cacheArtifactSize.toMillisOrZero() } }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { it.value.sum() }
+        .toList()
+        .sortedByDescending { it.second }
+
+// --- Dependency family aggregation (U5) ---
+// Family = group:name (the coordinate with its version dropped); enables fragmentation detection.
+
+data class DependencyFamily(
+    val family: String,
+    val versions: List<String>,
+    val count: Int,
+    val totalDuration: Int,
+    val cacheSize: Int,
+    val mostExpensiveVersion: String
+)
+
+fun List<ArtifactTransform>.dependencyFamilies(): List<DependencyFamily> =
+    this.mapNotNull { transform -> transform.dependencyCoordinate()?.let { transform to it } }
+        .groupBy { it.second.substringBeforeLast(":") }
+        .map { (family, pairs) ->
+            val mostExpensiveVersion = pairs
+                .groupBy { it.second.substringAfterLast(":") }
+                .mapValues { (_, p) -> p.sumOf { it.first.duration.toMillisOrZero() } }
+                .maxByOrNull { it.value }?.key ?: ""
+            DependencyFamily(
+                family = family,
+                versions = pairs.map { it.second.substringAfterLast(":") }.distinct().sorted(),
+                count = pairs.size,
+                totalDuration = pairs.sumOf { it.first.duration.toMillisOrZero() },
+                cacheSize = pairs.filter { it.first.cacheArtifactSize != null }
+                    .sumOf { it.first.cacheArtifactSize.toMillisOrZero() },
+                mostExpensiveVersion = mostExpensiveVersion
+            )
+        }
+        .sortedByDescending { it.totalDuration }
+
 // inputArtifactName is the resolved artifact file; external dependencies follow
 // <library>-<version>.<jar|aar>. Used to flag dependency version drift.
 

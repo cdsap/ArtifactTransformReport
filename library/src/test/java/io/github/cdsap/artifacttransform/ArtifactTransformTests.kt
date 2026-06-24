@@ -385,6 +385,45 @@ class ArtifactTransformTests {
         assertEquals(":feature:home" to 30, byModule[1])
     }
 
+    // GAV-coordinate sources for dependency aggregation + family fragmentation
+    private fun dep(coordinate: String, duration: String, cacheSize: String = "0") =
+        ArtifactTransform("$coordinate [artifactType=jar]", "T", "a.jar", "success", "executed_cacheable", duration, null, "0", cacheSize, arrayOf(), "b")
+
+    private val depSample = listOf(
+        dep("androidx.appcompat:appcompat:1.7.0", "100", "500"),
+        dep("androidx.appcompat:appcompat:1.7.0", "60", "500"),
+        dep("androidx.appcompat:appcompat:1.6.0", "30", "200"),
+        dep("com.squareup.okio:okio:3.9.0", "40"),
+        dep("project :app", "10"), // not a GAV (one colon segment after 'project ') -> excluded
+    )
+
+    @Test
+    fun `test dependencyCoordinate`() {
+        assertEquals("androidx.appcompat:appcompat:1.7.0", depSample[0].dependencyCoordinate())
+        assertEquals(null, depSample[4].dependencyCoordinate()) // project module -> not a dependency
+    }
+
+    @Test
+    fun `test per-dependency aggregations`() {
+        assertEquals(160, depSample.durationByDependency().toMap()["androidx.appcompat:appcompat:1.7.0"]) // 100 + 60
+        assertEquals(2, depSample.countByDependency().toMap()["androidx.appcompat:appcompat:1.7.0"])
+        assertEquals(80, depSample.medianDurationByDependency().toMap()["androidx.appcompat:appcompat:1.7.0"]) // median of [100,60]
+        assertEquals(1000, depSample.cacheSizeByDependency().toMap()["androidx.appcompat:appcompat:1.7.0"]) // 500 + 500
+    }
+
+    @Test
+    fun `test dependencyFamilies`() {
+        val families = depSample.dependencyFamilies().associateBy { it.family }
+        val appcompat = families["androidx.appcompat:appcompat"]!!
+        assertEquals(listOf("1.6.0", "1.7.0"), appcompat.versions)
+        assertEquals(3, appcompat.count) // two 1.7.0 + one 1.6.0
+        assertEquals(190, appcompat.totalDuration) // 100 + 60 + 30
+        assertEquals(1200, appcompat.cacheSize) // 500 + 500 + 200
+        assertEquals("1.7.0", appcompat.mostExpensiveVersion) // 160 > 30
+        // single-version family present but not fragmented
+        assertEquals(listOf("3.9.0"), families["com.squareup.okio:okio"]!!.versions)
+    }
+
     @Test
     fun `test librariesWithMultipleVersions normalizes variants`() {
         val sample = listOf(

@@ -9,15 +9,15 @@ import io.github.cdsap.artifacttransform.p95DurationByAttributeTransition
 import io.github.cdsap.artifacttransform.p95DurationByTransformActionType
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
 import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
-import io.github.cdsap.artifacttransform.dependencySortedByDuration
+import io.github.cdsap.artifacttransform.dependencyFamilies
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
 import io.github.cdsap.artifacttransform.durationByBuildScan
+import io.github.cdsap.artifacttransform.durationByDependency
 import io.github.cdsap.artifacttransform.durationByModule
 import io.github.cdsap.artifacttransform.durationByProvider
 import io.github.cdsap.artifacttransform.durationBySourceCategory
 import io.github.cdsap.artifacttransform.durationByTransformActionType
 import io.github.cdsap.artifacttransform.extractName
-import io.github.cdsap.artifacttransform.librariesWithMultipleVersions
 import io.github.cdsap.artifacttransform.medianDurationByTransformActionType
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
@@ -174,16 +174,19 @@ class HtmlOutput(
     }
 
     private fun versionFragmentationSection(): String {
-        val drift = transforms.librariesWithMultipleVersions()
-        if (drift.isEmpty()) return ""
-        val rows = drift.joinToString("") { (library, versions) ->
-            """<tr><td>${library.escapeXml()}</td><td>${versions.size}</td><td>${versions.joinToString(", ").escapeXml()}</td></tr>"""
+        val fragmented = transforms.dependencyFamilies().filter { it.versions.size > 1 }
+        if (fragmented.isEmpty()) return ""
+        val rows = fragmented.joinToString("") { family ->
+            """<tr><td>${family.family.escapeXml()}</td><td>${family.versions.size}</td>""" +
+                """<td>${family.versions.joinToString(", ").escapeXml()}</td><td>${family.count}</td>""" +
+                """<td>${formatMsValue(family.totalDuration)}</td><td>${formatBytes(family.cacheSize.toLong())}</td>""" +
+                """<td>${family.mostExpensiveVersion.escapeXml()}</td></tr>"""
         }
         return """
             <section class="card pipeline">
-              <h2>Dependencies transformed under multiple versions (${drift.size})</h2>
-              <p class="hint">Each distinct version is fingerprinted and transformed separately; aligning versions removes duplicated transform work. Variant-only differences (-api / -runtime) are normalized out.</p>
-              <div class="scroll"><table class="frag"><thead><tr><th>Library</th><th>Versions</th><th>Detail</th></tr></thead><tbody>$rows</tbody></table></div>
+              <h2>Dependencies transformed under multiple versions (${fragmented.size})</h2>
+              <p class="hint">Each distinct version is fingerprinted and transformed separately; aligning versions removes duplicated transform work.</p>
+              <div class="scroll"><table class="frag"><thead><tr><th>Family</th><th>Versions</th><th>Detail</th><th>Count</th><th>Duration</th><th>Cache size</th><th>Most expensive</th></tr></thead><tbody>$rows</tbody></table></div>
             </section>
         """.trimIndent()
     }
@@ -343,7 +346,7 @@ class HtmlOutput(
                 data.map { it.first }, data.map { it.second.toLong() }, "P95 duration (ms)"
             )
         }
-        transforms.dependencySortedByDuration().take(10).let { data ->
+        transforms.durationByDependency().take(10).let { data ->
             addSpec(
                 "byDependency", "bar", "y", "Duration by dependency",
                 data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
@@ -388,6 +391,12 @@ class HtmlOutput(
         bytes >= 1_048_576 -> "${(bytes / 1_048_576.0).roundTo(1)} MB"
         bytes >= 1_024 -> "${(bytes / 1_024.0).roundTo(1)} KB"
         else -> "$bytes B"
+    }
+
+    private fun formatMsValue(ms: Int): String = when {
+        ms >= 60_000 -> "${(ms / 60_000.0).roundTo(1)} min"
+        ms >= 1_000 -> "${(ms / 1_000.0).roundTo(1)} s"
+        else -> "$ms ms"
     }
 
     private fun Double.roundTo(decimals: Int): Double {
