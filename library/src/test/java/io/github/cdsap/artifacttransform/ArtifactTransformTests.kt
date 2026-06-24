@@ -267,6 +267,40 @@ class ArtifactTransformTests {
         assertEquals(2, counts["build1"])
     }
 
+    // 3-build fixture for build-level analytics + outlier detection
+    private fun b(buildId: String, type: String, avoid: String, duration: String) =
+        ArtifactTransform("e", type, "a", "success", avoid, duration, null, "0", "0", arrayOf(), buildId)
+
+    private val buildSample = listOf(
+        b("b1", "T1", "avoided_from_local_cache", "50"),
+        b("b1", "T1", "executed_cacheable", "50"), // b1 total 100, hit rate 1/2
+        b("b2", "T1", "avoided_up_to_date", "110"), // b2 total 110, hit rate 1/1
+        b("b3", "T2", "executed_cacheable", "1000"), // b3 total 1000 -> outlier; top type T2
+    )
+
+    @Test
+    fun `test cacheHitRateByBuildScan`() {
+        val rates = buildSample.cacheHitRateByBuildScan().toMap()
+        assertEquals(0.5, rates["b1"])
+        assertEquals(1.0, rates["b2"])
+        assertEquals(0.0, rates["b3"])
+    }
+
+    @Test
+    fun `test slowest and top type by build scan`() {
+        assertEquals("b3", buildSample.slowestTransformByBuildScan()[0].first)
+        assertEquals("T2", buildSample.topTransformTypeByBuildScan().toMap()["b3"])
+        assertEquals("T1", buildSample.topTransformTypeByBuildScan().toMap()["b1"])
+    }
+
+    @Test
+    fun `test outlierBuildScans`() {
+        // median total across [100, 110, 1000] is 110; threshold 220; only b3 exceeds it
+        assertEquals(listOf("b3"), buildSample.outlierBuildScans())
+        // fewer than 3 builds -> no outliers
+        assertEquals(emptyList<String>(), cacheTransforms.outlierBuildScans())
+    }
+
     // aar -> exploded -> jar -> classes ; jar -> snapshot
     private fun edge(from: String, to: String, duration: String) =
         ArtifactTransform("e", "T", "a", "success", "executed_cacheable", duration, null, "0", "0", arrayOf(ChangedAttributes("artifactType", from, to)), "b")

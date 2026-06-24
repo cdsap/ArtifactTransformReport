@@ -8,12 +8,17 @@ import io.github.cdsap.artifacttransform.maxDurationByTransformActionType
 import io.github.cdsap.artifacttransform.p95DurationByAttributeTransition
 import io.github.cdsap.artifacttransform.p95DurationByTransformActionType
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
+import io.github.cdsap.artifacttransform.cacheHitRateByBuildScan
 import io.github.cdsap.artifacttransform.cacheSizeByDependency
 import io.github.cdsap.artifacttransform.cacheSizeBySourceCategory
 import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
+import io.github.cdsap.artifacttransform.countByBuildScan
 import io.github.cdsap.artifacttransform.dependencyFamilies
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
 import io.github.cdsap.artifacttransform.durationByBuildScan
+import io.github.cdsap.artifacttransform.outlierBuildScans
+import io.github.cdsap.artifacttransform.slowestTransformByBuildScan
+import io.github.cdsap.artifacttransform.topTransformTypeByBuildScan
 import io.github.cdsap.artifacttransform.durationByDependency
 import io.github.cdsap.artifacttransform.durationByModule
 import io.github.cdsap.artifacttransform.durationByProvider
@@ -118,6 +123,7 @@ class HtmlOutput(
                 </section>
                 ${pipelineSection()}
                 ${versionFragmentationSection()}
+                ${buildLevelSection()}
                 <main class="grid" id="grid"></main>
                 <footer>Durations shown in milliseconds. Charts are interactive (hover for details).</footer>
                 <script>
@@ -189,6 +195,40 @@ class HtmlOutput(
               <h2>Dependencies transformed under multiple versions (${fragmented.size})</h2>
               <p class="hint">Each distinct version is fingerprinted and transformed separately; aligning versions removes duplicated transform work.</p>
               <div class="scroll"><table class="frag"><thead><tr><th>Family</th><th>Versions</th><th>Detail</th><th>Count</th><th>Duration</th><th>Cache size</th><th>Most expensive</th></tr></thead><tbody>$rows</tbody></table></div>
+            </section>
+        """.trimIndent()
+    }
+
+    private fun isMultiBuild(): Boolean = transforms.mapNotNull { it.buildScanId }.distinct().size > 1
+
+    private fun buildLevelSection(): String {
+        if (!isMultiBuild()) return ""
+        val durations = transforms.durationByBuildScan().toMap()
+        val counts = transforms.countByBuildScan().toMap()
+        val hitRates = transforms.cacheHitRateByBuildScan().toMap()
+        val slowest = transforms.slowestTransformByBuildScan().toMap()
+        val topType = transforms.topTransformTypeByBuildScan().toMap()
+        val outliers = transforms.outlierBuildScans().toSet()
+
+        val rows = transforms.durationByBuildScan().joinToString("") { (build, duration) ->
+            val flag = if (build in outliers) " ⚠" else ""
+            val slowestLabel = slowest[build]?.let {
+                "${it.transformActionType.substringAfterLast(".")} (${formatMsValue(it.duration.toIntOrNull() ?: 0)})"
+            } ?: "—"
+            """<tr><td>${build.escapeXml()}$flag</td><td>${formatMsValue(duration)}</td><td>${counts[build] ?: 0}</td>""" +
+                """<td>${((hitRates[build] ?: 0.0) * 100).roundTo(1)}%</td><td>${slowestLabel.escapeXml()}</td>""" +
+                """<td>${(topType[build] ?: "").substringAfterLast(".").escapeXml()}</td></tr>"""
+        }
+        val outlierNote = if (outliers.isNotEmpty()) {
+            """<p class="hint">⚠ Outlier build(s): ${outliers.joinToString(", ").escapeXml()} — total transform duration over 2× the median across builds.</p>"""
+        } else {
+            ""
+        }
+        return """
+            <section class="card pipeline">
+              <h2>Build-level analysis (${transforms.mapNotNull { it.buildScanId }.distinct().size} build scans)</h2>
+              $outlierNote
+              <div class="scroll"><table class="frag"><thead><tr><th>Build scan</th><th>Duration</th><th>Count</th><th>Hit rate</th><th>Slowest transform</th><th>Top type</th></tr></thead><tbody>$rows</tbody></table></div>
             </section>
         """.trimIndent()
     }
@@ -361,11 +401,23 @@ class HtmlOutput(
                 data.map { it.duration.toIntOrNull()?.toLong() ?: 0L }, "Duration (ms)"
             )
         }
-        transforms.durationByBuildScan().take(10).let { data ->
-            if (data.size > 1) {
+        if (isMultiBuild()) {
+            transforms.durationByBuildScan().take(15).let { data ->
                 addSpec(
                     "byBuildScan", "bar", "x", "Duration by build scan",
                     data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
+                )
+            }
+            transforms.countByBuildScan().take(15).let { data ->
+                addSpec(
+                    "countByBuildScan", "bar", "x", "Transform count by build scan",
+                    data.map { it.first }, data.map { it.second.toLong() }, "Count"
+                )
+            }
+            transforms.cacheHitRateByBuildScan().take(15).let { data ->
+                addSpec(
+                    "hitRateByBuildScan", "bar", "x", "Cache hit rate by build scan",
+                    data.map { it.first }, data.map { Math.round(it.second * 100) }, "Hit rate (%)"
                 )
             }
         }

@@ -264,6 +264,36 @@ fun List<ArtifactTransform>.countByBuildScan(): List<Pair<String, Int>> =
         .toList()
         .sortedByDescending { it.second }
 
+// --- Build-level analytics + outlier detection (U8) ---
+
+fun List<ArtifactTransform>.cacheHitRateByBuildScan(): List<Pair<String, Double>> =
+    this.groupBy { it.buildScanId ?: "unknown" }
+        .mapValues { (_, values) -> values.overallCacheHitRate() }
+        .toList()
+        .sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.slowestTransformByBuildScan(): List<Pair<String, ArtifactTransform>> =
+    this.groupBy { it.buildScanId ?: "unknown" }
+        .mapValues { (_, values) -> values.maxByOrNull { it.duration.toMillisOrZero() } }
+        .mapNotNull { (build, transform) -> transform?.let { build to it } }
+        .sortedByDescending { it.second.duration.toMillisOrZero() }
+
+fun List<ArtifactTransform>.topTransformTypeByBuildScan(): List<Pair<String, String>> =
+    this.groupBy { it.buildScanId ?: "unknown" }
+        .mapValues { (_, values) -> values.durationByTransformActionType().firstOrNull()?.first ?: "" }
+        .toList()
+
+/**
+ * Build scans whose total transform duration is an outlier. Requires at least 3 builds and flags any
+ * build exceeding twice the median total duration across builds.
+ */
+fun List<ArtifactTransform>.outlierBuildScans(): List<String> {
+    val totals = durationByBuildScan()
+    if (totals.size < 3) return emptyList()
+    val threshold = totals.map { it.second }.median() * 2
+    return totals.filter { it.second > threshold }.map { it.first }
+}
+
 // --- Prototype: tool/plugin attribution (#1) ---
 // transformActionType is a fully-qualified class name; its package identifies the plugin/ecosystem
 // that contributed the transform.
