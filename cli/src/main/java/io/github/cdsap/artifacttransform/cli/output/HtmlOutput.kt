@@ -3,6 +3,10 @@ package io.github.cdsap.artifacttransform.cli.output
 import com.google.gson.Gson
 import io.github.cdsap.artifacttransform.aggregatedCacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.artifactLevels
+import io.github.cdsap.artifacttransform.averageDurationByTransformActionType
+import io.github.cdsap.artifacttransform.maxDurationByTransformActionType
+import io.github.cdsap.artifacttransform.p95DurationByAttributeTransition
+import io.github.cdsap.artifacttransform.p95DurationByTransformActionType
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
 import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.dependencySortedByDuration
@@ -239,7 +243,7 @@ class HtmlOutput(
             val cx1 = x1 + colW / 3
             val cx2 = x2 - colW / 3
             val strokeWidth = 1.0 + 5.0 * edge.totalDuration / maxDuration
-            val edgeTitle = "${edge.from} → ${edge.to} · ${edge.count} transforms · ${edge.totalDuration}ms"
+            val edgeTitle = "${edge.from} → ${edge.to} · ${edge.count} transforms · ${edge.totalDuration}ms total · ${edge.medianDuration}ms median"
             sb.append(
                 """<path d="M$x1,$y1 C$cx1,$y1 $cx2,$y2 ${x2 - 7},$y2" """ +
                     """fill="none" stroke="#5a6072" stroke-width="${"%.1f".format(strokeWidth)}" stroke-opacity="0.55" marker-end="url(#arrow)">""" +
@@ -285,6 +289,24 @@ class HtmlOutput(
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Median duration (ms)"
             )
         }
+        transforms.averageDurationByTransformActionType().take(10).let { data ->
+            addSpec(
+                "averageByType", "bar", "x", "Average duration by transform type",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Average duration (ms)"
+            )
+        }
+        transforms.p95DurationByTransformActionType().take(10).let { data ->
+            addSpec(
+                "p95ByType", "bar", "x", "P95 duration by transform type",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "P95 duration (ms)"
+            )
+        }
+        transforms.maxDurationByTransformActionType().take(10).let { data ->
+            addSpec(
+                "maxByType", "bar", "x", "Max duration by transform type",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Max duration (ms)"
+            )
+        }
         transforms.totalByTransformActionType().take(10).let { data ->
             addSpec(
                 "countByType", "bar", "x", "Count by transform type",
@@ -313,6 +335,12 @@ class HtmlOutput(
             addSpec(
                 "attrTransitions", "bar", "y", "Duration by changed-attribute transition",
                 data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
+            )
+        }
+        transforms.p95DurationByAttributeTransition().take(10).let { data ->
+            addSpec(
+                "p95Transitions", "bar", "y", "P95 duration by changed-attribute transition",
+                data.map { it.first }, data.map { it.second.toLong() }, "P95 duration (ms)"
             )
         }
         transforms.dependencySortedByDuration().take(10).let { data ->

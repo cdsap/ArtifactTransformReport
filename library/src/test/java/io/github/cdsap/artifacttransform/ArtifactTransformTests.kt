@@ -63,6 +63,27 @@ class ArtifactTransformTests {
     }
 
     @Test
+    fun `test distribution helpers`() {
+        assertEquals(0, emptyList<Int>().percentile(95))
+        assertEquals(0, emptyList<Int>().averageInt())
+        assertEquals(0, emptyList<Int>().maxOrZero())
+        assertEquals(5, listOf(5).percentile(95))
+        assertEquals(19, (1..20).toList().percentile(95)) // nearest-rank: ceil(.95*20)=19 -> sorted[18]
+        assertEquals(4, listOf(1, 3, 5, 7).averageInt())
+        assertEquals(7, listOf(1, 3, 5, 7).maxOrZero())
+    }
+
+    @Test
+    fun `test extended measures by transform type`() {
+        // TransformType1 durations: 200, 300
+        assertEquals(250, sampleTransforms.averageDurationByTransformActionType().toMap()["TransformType1"])
+        assertEquals(300, sampleTransforms.p95DurationByTransformActionType().toMap()["TransformType1"])
+        assertEquals(300, sampleTransforms.maxDurationByTransformActionType().toMap()["TransformType1"])
+        // TransformType3 single execution: 100
+        assertEquals(100, sampleTransforms.maxDurationByTransformActionType().toMap()["TransformType3"])
+    }
+
+    @Test
     fun `test fingerprintingByTransformActionType`() {
         val fingerprintingList = sampleTransforms.fingerprintingByTransformActionType()
         assertEquals("TransformType1", fingerprintingList[0].first)
@@ -221,6 +242,15 @@ class ArtifactTransformTests {
     }
 
     @Test
+    fun `test median and p95 by attribute transition`() {
+        // jar -> classpath-entry-snapshot durations: 10, 100, 200
+        val median = cacheTransforms.medianDurationByAttributeTransition().toMap()
+        assertEquals(100, median["artifactType: jar -> classpath-entry-snapshot"])
+        val p95 = cacheTransforms.p95DurationByAttributeTransition().toMap()
+        assertEquals(200, p95["artifactType: jar -> classpath-entry-snapshot"])
+    }
+
+    @Test
     fun `test durationByBuildScan`() {
         val byBuild = cacheTransforms.durationByBuildScan()
         // build2: e3 (200) + e4 (50) + e5 (5) = 255; build1: e1 (10) + e2 (100) = 110
@@ -255,6 +285,7 @@ class ArtifactTransformTests {
         val aarToExploded = edges.first { it.from == "aar" && it.to == "exploded" }
         assertEquals(2, aarToExploded.count)
         assertEquals(30, aarToExploded.totalDuration)
+        assertEquals(15, aarToExploded.medianDuration) // median of [10, 20]
         // sorted by total duration descending: jar->classes (40) is first
         assertEquals("jar", edges[0].from)
         assertEquals("classes", edges[0].to)

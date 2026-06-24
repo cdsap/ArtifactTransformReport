@@ -43,6 +43,35 @@ internal fun List<Int>.median(): Int {
     return if (sorted.size % 2 == 1) sorted[mid] else (sorted[mid - 1] + sorted[mid]) / 2
 }
 
+// --- Distribution-measure helpers (U1) ---
+
+/** Nearest-rank percentile (e.g. percentile(95) = p95). Empty -> 0. */
+internal fun List<Int>.percentile(p: Int): Int {
+    if (isEmpty()) return 0
+    val sorted = sorted()
+    val rank = Math.ceil(p / 100.0 * sorted.size).toInt().coerceIn(1, sorted.size)
+    return sorted[rank - 1]
+}
+
+internal fun List<Int>.averageInt(): Int = if (isEmpty()) 0 else Math.round(average()).toInt()
+
+internal fun List<Int>.maxOrZero(): Int = maxOrNull() ?: 0
+
+// --- Extended duration measures by transform type (U2) ---
+
+private fun List<ArtifactTransform>.durationsByType(): Map<String, List<Int>> =
+    this.groupBy { it.transformActionType }
+        .mapValues { (_, values) -> values.map { it.duration.toMillisOrZero() } }
+
+fun List<ArtifactTransform>.averageDurationByTransformActionType(): List<Pair<String, Int>> =
+    durationsByType().mapValues { it.value.averageInt() }.toList().sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.p95DurationByTransformActionType(): List<Pair<String, Int>> =
+    durationsByType().mapValues { it.value.percentile(95) }.toList().sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.maxDurationByTransformActionType(): List<Pair<String, Int>> =
+    durationsByType().mapValues { it.value.maxOrZero() }.toList().sortedByDescending { it.second }
+
 fun List<ArtifactTransform>.fingerprintingByTransformActionType() = this.groupBy { it.transformActionType }
     .mapValues { (_, values) -> values.sumOf { it.fingerprintingDuration.toInt() } }
     .toList()
@@ -211,6 +240,16 @@ fun List<ArtifactTransform>.countByAttributeTransition(): List<Pair<String, Int>
         .toList()
         .sortedByDescending { it.second }
 
+private fun List<ArtifactTransform>.durationsByTransition(): Map<String, List<Int>> =
+    this.groupBy { it.attributeTransitionLabel() }
+        .mapValues { (_, values) -> values.map { it.duration.toMillisOrZero() } }
+
+fun List<ArtifactTransform>.medianDurationByAttributeTransition(): List<Pair<String, Int>> =
+    durationsByTransition().mapValues { it.value.median() }.toList().sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.p95DurationByAttributeTransition(): List<Pair<String, Int>> =
+    durationsByTransition().mapValues { it.value.percentile(95) }.toList().sortedByDescending { it.second }
+
 // --- Tier 1: per-build-scan aggregation ---
 
 fun List<ArtifactTransform>.durationByBuildScan(): List<Pair<String, Int>> =
@@ -325,7 +364,8 @@ data class TransitionEdge(
     val from: String,
     val to: String,
     val count: Int,
-    val totalDuration: Int
+    val totalDuration: Int,
+    val medianDuration: Int
 )
 
 fun List<ArtifactTransform>.attributeTransitionEdges(): List<TransitionEdge> =
@@ -333,7 +373,10 @@ fun List<ArtifactTransform>.attributeTransitionEdges(): List<TransitionEdge> =
         transform.changedAttributes.map { Triple(it.from, it.to, transform.duration.toMillisOrZero()) }
     }
         .groupBy { it.first to it.second }
-        .map { (key, grouped) -> TransitionEdge(key.first, key.second, grouped.size, grouped.sumOf { it.third }) }
+        .map { (key, grouped) ->
+            val durations = grouped.map { it.third }
+            TransitionEdge(key.first, key.second, grouped.size, durations.sum(), durations.median())
+        }
         .sortedByDescending { it.totalDuration }
 
 /**
