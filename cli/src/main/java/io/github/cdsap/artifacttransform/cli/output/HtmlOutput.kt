@@ -25,6 +25,8 @@ import io.github.cdsap.artifacttransform.durationByProvider
 import io.github.cdsap.artifacttransform.durationBySourceCategory
 import io.github.cdsap.artifacttransform.durationByTransformActionType
 import io.github.cdsap.artifacttransform.extractName
+import io.github.cdsap.artifacttransform.Severity
+import io.github.cdsap.artifacttransform.findings
 import io.github.cdsap.artifacttransform.medianDurationByTransformActionType
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
@@ -115,6 +117,9 @@ class HtmlOutput(
                   table.frag th, table.frag td { text-align:left; padding:7px 12px; border-bottom:1px solid var(--border); }
                   table.frag th { color:var(--muted); font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
                   table.frag td:nth-child(2) { color:var(--accent); font-weight:600; }
+                  .finding { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+                  .finding:last-child { border-bottom:none; }
+                  .finding .sev { flex:none; width:8px; height:8px; border-radius:50%; margin-top:5px; }
                   footer { color:var(--muted); font-size:12px; padding:0 32px 32px; }
                 </style>
                 <script>$chartJs</script>
@@ -132,6 +137,7 @@ class HtmlOutput(
                   <div class="stat"><div class="v">${formatBytes(totalCacheSizeBytes())}</div><div class="l">Total cache size</div></div>
                   $savingsStat
                 </section>
+                ${findingsSection()}
                 ${pipelineSection()}
                 ${versionFragmentationSection()}
                 ${buildLevelSection()}
@@ -225,6 +231,26 @@ class HtmlOutput(
               <h2>Dependencies transformed under multiple versions (${fragmented.size})</h2>
               <p class="hint">Each distinct version is fingerprinted and transformed separately; aligning versions removes duplicated transform work.</p>
               <div class="scroll"><table class="frag"><thead><tr><th>Family</th><th>Versions</th><th>Detail</th><th>Count</th><th>Duration</th><th>Cache size</th><th>Most expensive</th></tr></thead><tbody>$rows</tbody></table></div>
+            </section>
+        """.trimIndent()
+    }
+
+    private fun findingsSection(): String {
+        val findings = transforms.findings()
+        if (findings.isEmpty()) return ""
+        val rows = findings.joinToString("") { finding ->
+            val color = when (finding.severity) {
+                Severity.HIGH -> "#ef6f6c"
+                Severity.MEDIUM -> "#f7c948"
+                Severity.LOW -> "#5ad19a"
+            }
+            """<div class="finding"><span class="sev" style="background:$color"></span>""" +
+                """<div><strong>${finding.subject.escapeXml()}</strong> — ${finding.message.escapeXml()}</div></div>"""
+        }
+        return """
+            <section class="card pipeline">
+              <h2>Findings (${findings.size})</h2>
+              $rows
             </section>
         """.trimIndent()
     }
