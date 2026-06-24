@@ -1,6 +1,6 @@
 ---
 title: "feat: Complete the Artifact Transform HTML report analytics spec"
-status: active
+status: completed
 date: 2026-06-24
 origin: docs/new_req.md
 type: feat
