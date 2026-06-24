@@ -304,12 +304,26 @@ fun ArtifactTransform.transformSource(): String =
 fun ArtifactTransform.sourceModule(): String? =
     transformSource().takeIf { it.startsWith("project ") }?.removePrefix("project ")
 
+// Conservative allowlist of platform/SDK/runtime inputs that appear as bare files (no GAV). Kept
+// intentionally small to honor the spec's "do not guess attribution" rule.
+private fun isSdkRuntimeArtifact(source: String): Boolean {
+    val file = source.substringAfterLast('/')
+    return file == "android.jar" ||
+        file.startsWith("gradle-api-") ||
+        file.startsWith("gradle-installation-beacon-") ||
+        file == "rt.jar" ||
+        file.startsWith("core-for-system-modules") ||
+        file.contains("jdkImage", ignoreCase = true)
+}
+
 fun ArtifactTransform.sourceCategory(): String {
     val source = transformSource()
     return when {
         source.startsWith("project ") -> "First-party module"
         source.count { it == ':' } >= 2 -> "External dependency"
-        else -> "Unattributed file"
+        isSdkRuntimeArtifact(source) -> "SDK/runtime artifact"
+        source.isNotBlank() -> "Unattributed file"
+        else -> "Unknown"
     }
 }
 
@@ -350,6 +364,13 @@ fun List<ArtifactTransform>.cacheSizeByDependency(): List<Pair<String, Int>> =
         .mapNotNull { t -> t.dependencyCoordinate()?.let { it to t.cacheArtifactSize.toMillisOrZero() } }
         .groupBy({ it.first }, { it.second })
         .mapValues { it.value.sum() }
+        .toList()
+        .sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.cacheSizeBySourceCategory(): List<Pair<String, Int>> =
+    this.filter { it.cacheArtifactSize != null }
+        .groupBy { it.sourceCategory() }
+        .mapValues { (_, values) -> values.sumOf { it.cacheArtifactSize.toMillisOrZero() } }
         .toList()
         .sortedByDescending { it.second }
 

@@ -8,6 +8,8 @@ import io.github.cdsap.artifacttransform.maxDurationByTransformActionType
 import io.github.cdsap.artifacttransform.p95DurationByAttributeTransition
 import io.github.cdsap.artifacttransform.p95DurationByTransformActionType
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
+import io.github.cdsap.artifacttransform.cacheSizeByDependency
+import io.github.cdsap.artifacttransform.cacheSizeBySourceCategory
 import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.dependencyFamilies
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
@@ -377,6 +379,18 @@ class HtmlOutput(
             addSpec(
                 "heaviestCache", "bar", "y", "Heaviest cached transforms",
                 data.map { it.first.substringBefore(" [") }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+            )
+        }
+        transforms.cacheSizeByDependency().take(10).let { data ->
+            addSpec(
+                "cacheSizeByDependency", "bar", "y", "Cache size by dependency",
+                data.map { it.first }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+            )
+        }
+        transforms.cacheSizeBySourceCategory().let { data ->
+            addSpec(
+                "cacheSizeBySource", "bar", "x", "Cache size by source category",
+                data.map { it.first }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
             )
         }
         return specs

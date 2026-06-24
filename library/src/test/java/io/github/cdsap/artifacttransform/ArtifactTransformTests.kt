@@ -371,6 +371,21 @@ class ArtifactTransformTests {
     }
 
     @Test
+    fun `test SDK runtime and unknown source categories`() {
+        assertEquals("SDK/runtime artifact", sourced("android.jar [artifactType=android-classes]", "1").sourceCategory())
+        assertEquals("SDK/runtime artifact", sourced("gradle-api-9.5.1.jar [artifactType=jar]", "1").sourceCategory())
+        assertEquals("Unattributed file", sourced("classes.jar [artifactType=android-classes]", "1").sourceCategory())
+        assertEquals("Unknown", sourced("", "1").sourceCategory()) // no source prefix at all
+    }
+
+    @Test
+    fun `test cacheSizeBySourceCategory`() {
+        val byCategory = depSample.cacheSizeBySourceCategory().toMap()
+        // depSample dependencies have cache 500+500+200+0 = 1200 under External dependency
+        assertEquals(1200, byCategory["External dependency"])
+    }
+
+    @Test
     fun `test durationBySourceCategory`() {
         val byCategory = sourceSample.durationBySourceCategory().toMap()
         assertEquals(180, byCategory["First-party module"]) // 100 + 50 + 30
