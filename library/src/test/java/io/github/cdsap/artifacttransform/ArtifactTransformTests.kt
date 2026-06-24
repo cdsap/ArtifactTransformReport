@@ -492,6 +492,26 @@ class ArtifactTransformTests {
         assertEquals(listOf("3.9.0"), families["com.squareup.okio:okio"]!!.versions)
     }
 
+    private fun depInBuild(coordinate: String, buildScanId: String) =
+        ArtifactTransform("$coordinate [artifactType=jar]", "T", "a.jar", "success", "executed_cacheable", "10", null, "0", "0", arrayOf(), buildScanId)
+
+    @Test
+    fun `test fragmentation requires multiple versions within the same build`() {
+        // same family, different versions but in DIFFERENT builds -> not fragmented
+        val crossBuild = listOf(
+            depInBuild("androidx.appcompat:appcompat:1.7.0", "b1"),
+            depInBuild("androidx.appcompat:appcompat:1.6.0", "b2"),
+        )
+        assertEquals(emptyList<String>(), crossBuild.dependencyFamiliesFragmentedWithinBuild().map { it.family })
+
+        // both versions in the SAME build -> fragmented
+        val inBuild = listOf(
+            depInBuild("androidx.appcompat:appcompat:1.7.0", "b1"),
+            depInBuild("androidx.appcompat:appcompat:1.6.0", "b1"),
+        )
+        assertEquals(listOf("androidx.appcompat:appcompat"), inBuild.dependencyFamiliesFragmentedWithinBuild().map { it.family })
+    }
+
     @Test
     fun `test dependencyFamilies handles classifier coordinates`() {
         val sample = listOf(

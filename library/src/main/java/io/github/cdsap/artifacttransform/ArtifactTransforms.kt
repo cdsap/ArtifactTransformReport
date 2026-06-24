@@ -458,6 +458,26 @@ fun List<ArtifactTransform>.dependencyFamilies(): List<DependencyFamily> =
         }
         .sortedByDescending { it.totalDuration }
 
+/**
+ * Families that were resolved to more than one version **within a single build scan** — genuine
+ * in-build fragmentation. Differing versions across separate builds are not flagged: that is normal
+ * version drift over time, not a classpath carrying multiple versions at once.
+ */
+fun List<ArtifactTransform>.dependencyFamiliesFragmentedWithinBuild(): List<DependencyFamily> {
+    val fragmentedFamilies = this
+        .mapNotNull { transform ->
+            transform.dependencyCoordinate()?.let {
+                Triple(transform.buildScanId ?: "unknown", it.gavFamily(), it.gavVersion())
+            }
+        }
+        .groupBy { it.first to it.second }
+        .filterValues { rows -> rows.map { it.third }.distinct().size > 1 }
+        .keys
+        .map { it.second }
+        .toSet()
+    return dependencyFamilies().filter { it.family in fragmentedFamilies }
+}
+
 // inputArtifactName is the resolved artifact file; external dependencies follow
 // <library>-<version>.<jar|aar>. Used to flag dependency version drift.
 
