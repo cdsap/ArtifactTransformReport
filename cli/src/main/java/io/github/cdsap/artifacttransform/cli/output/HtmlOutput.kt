@@ -163,10 +163,11 @@ class HtmlOutput(
                         if (v >= 1000) return (v / 1000).toFixed(1) + ' s';
                         return v + ' ms';
                       }
-                      if (label.indexOf('KB') !== -1) { // data already in KB
-                        if (v >= 1048576) return (v / 1048576).toFixed(1) + ' GB';
-                        if (v >= 1024) return (v / 1024).toFixed(1) + ' MB';
-                        return v + ' KB';
+                      if (label.indexOf('bytes') !== -1) { // data in raw bytes
+                        if (v >= 1073741824) return (v / 1073741824).toFixed(1) + ' GB';
+                        if (v >= 1048576) return (v / 1048576).toFixed(1) + ' MB';
+                        if (v >= 1024) return (v / 1024).toFixed(1) + ' KB';
+                        return v + ' B';
                       }
                       if (label.indexOf('%') !== -1) return v + '%';
                       return v;
@@ -480,25 +481,25 @@ class HtmlOutput(
         transforms.aggregatedCacheSizeByTransformActionType().take(10).let { data ->
             addSpec(
                 "cacheSizeByType", "bar", "x", "Cache size by transform type",
-                data.map { it.first.extractName() }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Cache size (bytes)"
             )
         }
         transforms.cacheSizeByTransformActionType().take(10).let { data ->
             addSpec(
                 "heaviestCache", "bar", "y", "Heaviest cached transforms",
-                data.map { it.first.substringBefore(" [") }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+                data.map { it.first.substringBefore(" [") }, data.map { it.second.toLong() }, "Cache size (bytes)"
             )
         }
         transforms.cacheSizeByDependency().take(10).let { data ->
             addSpec(
                 "cacheSizeByDependency", "bar", "y", "Cache size by dependency",
-                data.map { it.first }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+                data.map { it.first }, data.map { it.second.toLong() }, "Cache size (bytes)"
             )
         }
         transforms.cacheSizeBySourceCategory().let { data ->
             addSpec(
                 "cacheSizeBySource", "bar", "x", "Cache size by source category",
-                data.map { it.first }, data.map { (it.second / 1024).toLong() }, "Cache size (KB)"
+                data.map { it.first }, data.map { it.second.toLong() }, "Cache size (bytes)"
             )
         }
         return specs
@@ -506,7 +507,7 @@ class HtmlOutput(
 
     private fun totalCacheSizeBytes(): Long =
         transforms.filter { it.cacheArtifactSize != null }
-            .sumOf { (it.cacheArtifactSize.toIntOrNull() ?: 0).toLong() }
+            .sumOf { it.cacheArtifactSize.toLongOrNull() ?: 0L }
 
     private fun formatBytes(bytes: Long): String = when {
         bytes >= 1_073_741_824 -> "${(bytes / 1_073_741_824.0).roundTo(1)} GB"

@@ -493,6 +493,27 @@ class ArtifactTransformTests {
     }
 
     @Test
+    fun `test dependencyFamilies handles classifier coordinates`() {
+        val sample = listOf(
+            dep("com.google.guava:guava:32.1.0:jdk8", "10"),
+            dep("com.google.guava:guava:31.0:jdk8", "5"),
+        )
+        val family = sample.dependencyFamilies().single()
+        assertEquals("com.google.guava:guava", family.family) // classifier not folded into family
+        assertEquals(listOf("31.0", "32.1.0"), family.versions) // version segment, not the classifier
+    }
+
+    @Test
+    fun `test outlierBuildScans ignores all-zero baselines`() {
+        val zeros = listOf(
+            b("b1", "T", "avoided_up_to_date", "0"),
+            b("b2", "T", "avoided_up_to_date", "0"),
+            b("b3", "T", "avoided_up_to_date", "0"),
+        )
+        assertEquals(emptyList<String>(), zeros.outlierBuildScans())
+    }
+
+    @Test
     fun `test librariesWithMultipleVersions normalizes variants`() {
         val sample = listOf(
             transform("X", "transition-1.5.0.jar", "1"),

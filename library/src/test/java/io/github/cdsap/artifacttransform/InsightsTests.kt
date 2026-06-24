@@ -37,6 +37,15 @@ class InsightsTests {
     }
 
     @Test
+    fun `single-execution type is not flagged as frequent`() {
+        val sample = listOf(
+            t("a:b:1 [x]", "TypeOnce", "avoided_from_local_cache", "100"),
+            t("c:d:1 [x]", "TypeOther", "avoided_from_local_cache", "100"),
+        )
+        assertTrue(sample.findings().none { it.kind == FindingKind.EXPENSIVE_BECAUSE_FREQUENT })
+    }
+
+    @Test
     fun `low hit rate on a high-cost type yields a cache opportunity`() {
         val sample = List(5) { t("a:b:1 [x]", "TypeMiss", "executed_cacheable", "100") }
         val findings = sample.findings()

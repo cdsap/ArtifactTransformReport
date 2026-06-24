@@ -304,7 +304,9 @@ fun List<ArtifactTransform>.topTransformTypeByBuildScan(): List<Pair<String, Str
 fun List<ArtifactTransform>.outlierBuildScans(): List<String> {
     val totals = durationByBuildScan()
     if (totals.size < 3) return emptyList()
-    val threshold = totals.map { it.second }.median() * 2
+    val median = totals.map { it.second }.median()
+    if (median <= 0) return emptyList() // no meaningful baseline (e.g. all builds fully cached)
+    val threshold = median * 2
     return totals.filter { it.second > threshold }.map { it.first }
 }
 
@@ -430,17 +432,23 @@ data class DependencyFamily(
     val mostExpensiveVersion: String
 )
 
+// group:name from a "group:name:version[:classifier]" coordinate.
+private fun String.gavFamily(): String = split(":").take(2).joinToString(":")
+
+// version segment from a "group:name:version[:classifier]" coordinate (empty when absent).
+private fun String.gavVersion(): String = split(":").getOrElse(2) { "" }
+
 fun List<ArtifactTransform>.dependencyFamilies(): List<DependencyFamily> =
     this.mapNotNull { transform -> transform.dependencyCoordinate()?.let { transform to it } }
-        .groupBy { it.second.substringBeforeLast(":") }
+        .groupBy { it.second.gavFamily() }
         .map { (family, pairs) ->
             val mostExpensiveVersion = pairs
-                .groupBy { it.second.substringAfterLast(":") }
+                .groupBy { it.second.gavVersion() }
                 .mapValues { (_, p) -> p.sumOf { it.first.duration.toMillisOrZero() } }
                 .maxByOrNull { it.value }?.key ?: ""
             DependencyFamily(
                 family = family,
-                versions = pairs.map { it.second.substringAfterLast(":") }.distinct().sorted(),
+                versions = pairs.map { it.second.gavVersion() }.distinct().sorted(),
                 count = pairs.size,
                 totalDuration = pairs.sumOf { it.first.duration.toMillisOrZero() },
                 cacheSize = pairs.filter { it.first.cacheArtifactSize != null }

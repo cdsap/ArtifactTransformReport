@@ -48,7 +48,7 @@ fun List<ArtifactTransform>.findings(): List<Finding> {
         val p95 = p95s[type] ?: 0
         val name = type.substringAfterLast(".")
 
-        if (share >= HIGH_SHARE && median <= overallMedian) {
+        if (share >= HIGH_SHARE && count > 1 && median <= overallMedian) {
             findings += Finding(
                 FindingKind.EXPENSIVE_BECAUSE_FREQUENT, Severity.MEDIUM, name,
                 "$name dominates total transform time mostly because it runs $count times, " +
