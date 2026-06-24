@@ -28,8 +28,11 @@ import io.github.cdsap.artifacttransform.extractName
 import io.github.cdsap.artifacttransform.medianDurationByTransformActionType
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
+import io.github.cdsap.artifacttransform.topNWithOther
 import io.github.cdsap.artifacttransform.topologicalArtifactOrder
+import io.github.cdsap.artifacttransform.totalAvoidanceSavings
 import io.github.cdsap.artifacttransform.totalByTransformActionType
+import io.github.cdsap.artifacttransform.totalDuration
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import java.io.File
 
@@ -70,6 +73,12 @@ class HtmlOutput(
 
         val buildScans = transforms.groupBy { it.buildScanId }.count()
         val hitRate = (transforms.overallCacheHitRate() * 100).roundTo(2)
+        val savings = transforms.totalAvoidanceSavings()
+        val savingsStat = if (savings > 0) {
+            """<div class="stat"><div class="v">${formatMsValue(savings)}</div><div class="l">Avoidance savings</div></div>"""
+        } else {
+            ""
+        }
 
         return buildString {
             append(
@@ -118,14 +127,16 @@ class HtmlOutput(
                 <section class="stats">
                   <div class="stat"><div class="v">${transforms.size}</div><div class="l">Total transforms</div></div>
                   <div class="stat"><div class="v">$buildScans</div><div class="l">Build scans</div></div>
+                  <div class="stat"><div class="v">${formatMsValue(transforms.totalDuration())}</div><div class="l">Total duration</div></div>
                   <div class="stat"><div class="v">$hitRate%</div><div class="l">Cache hit rate</div></div>
                   <div class="stat"><div class="v">${formatBytes(totalCacheSizeBytes())}</div><div class="l">Total cache size</div></div>
+                  $savingsStat
                 </section>
                 ${pipelineSection()}
                 ${versionFragmentationSection()}
                 ${buildLevelSection()}
                 <main class="grid" id="grid"></main>
-                <footer>Durations shown in milliseconds. Charts are interactive (hover for details).</footer>
+                <footer>Charts are interactive (hover for full labels and values).</footer>
                 <script>
                   const CHARTS = $chartsJson;
                   const palette = ['#6aa6ff','#5ad19a','#f7c948','#ef6f6c','#b48ef0','#4fd1c5','#f6995c','#7e8cff','#e879a6','#9ccc65'];
@@ -138,11 +149,27 @@ class HtmlOutput(
                     wrap.appendChild(canvas); card.appendChild(wrap); grid.appendChild(card);
                     const horizontal = c.indexAxis === 'y';
                     function trunc(s) { return s.length > 28 ? s.slice(0, 27) + '…' : s; }
+                    // Human-readable value formatting inferred from the chart's value label.
+                    function fmtVal(v) {
+                      var label = c.valueLabel || '';
+                      if (label.indexOf('ms') !== -1) {
+                        if (v >= 60000) return (v / 60000).toFixed(1) + ' min';
+                        if (v >= 1000) return (v / 1000).toFixed(1) + ' s';
+                        return v + ' ms';
+                      }
+                      if (label.indexOf('KB') !== -1) { // data already in KB
+                        if (v >= 1048576) return (v / 1048576).toFixed(1) + ' GB';
+                        if (v >= 1024) return (v / 1024).toFixed(1) + ' MB';
+                        return v + ' KB';
+                      }
+                      if (label.indexOf('%') !== -1) return v + '%';
+                      return v;
+                    }
                     const catTicks = {
                       color: '#9aa3b2', autoSkip: false,
                       callback: function (value) { return trunc(this.getLabelForValue(value)); }
                     };
-                    const valTicks = { color: '#9aa3b2' };
+                    const valTicks = { color: '#9aa3b2', callback: function (value) { return fmtVal(value); } };
                     let scales = {};
                     if (c.type !== 'doughnut') {
                       scales[horizontal ? 'y' : 'x'] = { ticks: catTicks, grid: { color: '#2a2e3a' } };
@@ -167,7 +194,10 @@ class HtmlOutput(
                         responsive: true, maintainAspectRatio: false,
                         plugins: {
                           legend: { display: c.type === 'doughnut', labels: { color: '#9aa3b2' } },
-                          tooltip: { callbacks: { title: function (items) { return items[0].label; } } }
+                          tooltip: { callbacks: {
+                            title: function (items) { return items[0].label; },
+                            label: function (item) { return (c.valueLabel || '') + ': ' + fmtVal(item.parsed[horizontal ? 'x' : 'y']); }
+                          } }
                         },
                         scales: scales
                       }
@@ -322,7 +352,7 @@ class HtmlOutput(
             if (labels.isNotEmpty()) specs += ChartSpec(id, type, indexAxis, title, labels, data, valueLabel)
         }
 
-        transforms.durationByTransformActionType().take(10).let { data ->
+        transforms.durationByTransformActionType().topNWithOther(10).let { data ->
             addSpec(
                 "durationByType", "bar", "x", "Total duration by transform type",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Total duration (ms)"
@@ -370,13 +400,13 @@ class HtmlOutput(
                 data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
             )
         }
-        transforms.durationByModule().take(10).let { data ->
+        transforms.durationByModule().topNWithOther(10).let { data ->
             addSpec(
                 "durationByModule", "bar", "y", "Transform duration by first-party module",
                 data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
             )
         }
-        transforms.durationByAttributeTransition().take(10).let { data ->
+        transforms.durationByAttributeTransition().topNWithOther(10).let { data ->
             addSpec(
                 "attrTransitions", "bar", "y", "Duration by changed-attribute transition",
                 data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
@@ -388,7 +418,7 @@ class HtmlOutput(
                 data.map { it.first }, data.map { it.second.toLong() }, "P95 duration (ms)"
             )
         }
-        transforms.durationByDependency().take(10).let { data ->
+        transforms.durationByDependency().topNWithOther(10).let { data ->
             addSpec(
                 "byDependency", "bar", "y", "Duration by dependency",
                 data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"

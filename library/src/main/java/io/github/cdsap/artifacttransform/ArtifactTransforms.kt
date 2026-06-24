@@ -200,6 +200,20 @@ fun List<ArtifactTransform>.overallCacheHitRate(): Double {
 fun List<ArtifactTransform>.totalAvoidableMissDuration(): Int =
     this.filter { it.isAvoidableMiss() }.sumOf { it.duration.toMillisOrZero() }
 
+fun List<ArtifactTransform>.totalDuration(): Int = this.sumOf { it.duration.toMillisOrZero() }
+
+/** Total time saved by avoided transforms (positive avoidanceSavings only), when available. */
+fun List<ArtifactTransform>.totalAvoidanceSavings(): Int =
+    this.filter { it.avoidanceSavings != null }
+        .sumOf { it.avoidanceSavings.toMillisOrZero().coerceAtLeast(0) }
+
+/** Keep the top n entries and roll the remainder into a single "Other" entry (when non-zero). */
+fun List<Pair<String, Int>>.topNWithOther(n: Int): List<Pair<String, Int>> {
+    if (size <= n) return this
+    val other = drop(n).sumOf { it.second }
+    return if (other > 0) take(n) + ("Other" to other) else take(n)
+}
+
 fun List<ArtifactTransform>.cacheEffectivenessByTransformActionType(): List<CacheEffectiveness> =
     this.groupBy { it.transformActionType }
         .map { (type, values) ->

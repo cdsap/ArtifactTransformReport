@@ -294,6 +294,25 @@ class ArtifactTransformTests {
     }
 
     @Test
+    fun `test topNWithOther`() {
+        val data = listOf("a" to 50, "b" to 40, "c" to 30, "d" to 20, "e" to 10)
+        val bucketed = data.topNWithOther(2)
+        assertEquals("a" to 50, bucketed[0])
+        assertEquals("b" to 40, bucketed[1])
+        assertEquals("Other" to 60, bucketed[2]) // 30 + 20 + 10
+        // n >= size returns unchanged
+        assertEquals(data, data.topNWithOther(5))
+    }
+
+    @Test
+    fun `test totalDuration and totalAvoidanceSavings`() {
+        // sampleTransforms durations: 200+150+300+100+150 = 900
+        assertEquals(900, sampleTransforms.totalDuration())
+        // avoidanceSavings: 100, -50, 200, -150, -120 -> positive sum 300
+        assertEquals(300, sampleTransforms.totalAvoidanceSavings())
+    }
+
+    @Test
     fun `test outlierBuildScans`() {
         // median total across [100, 110, 1000] is 110; threshold 220; only b3 exceeds it
         assertEquals(listOf("b3"), buildSample.outlierBuildScans())
