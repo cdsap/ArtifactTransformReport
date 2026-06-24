@@ -8,8 +8,12 @@ import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.dependencySortedByDuration
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
 import io.github.cdsap.artifacttransform.durationByBuildScan
+import io.github.cdsap.artifacttransform.durationByModule
+import io.github.cdsap.artifacttransform.durationByProvider
+import io.github.cdsap.artifacttransform.durationBySourceCategory
 import io.github.cdsap.artifacttransform.durationByTransformActionType
 import io.github.cdsap.artifacttransform.extractName
+import io.github.cdsap.artifacttransform.librariesWithMultipleVersions
 import io.github.cdsap.artifacttransform.medianDurationByTransformActionType
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
@@ -87,6 +91,10 @@ class HtmlOutput(
                   .pipeline .scroll { overflow:auto; }
                   .pipeline svg { display:block; }
                   .pipeline .hint { color:var(--muted); font-size:12px; margin:0 0 12px; }
+                  table.frag { border-collapse:collapse; width:100%; font-size:13px; }
+                  table.frag th, table.frag td { text-align:left; padding:7px 12px; border-bottom:1px solid var(--border); }
+                  table.frag th { color:var(--muted); font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
+                  table.frag td:nth-child(2) { color:var(--accent); font-weight:600; }
                   footer { color:var(--muted); font-size:12px; padding:0 32px 32px; }
                 </style>
                 <script>$chartJs</script>
@@ -103,6 +111,7 @@ class HtmlOutput(
                   <div class="stat"><div class="v">${formatBytes(totalCacheSizeBytes())}</div><div class="l">Total cache size</div></div>
                 </section>
                 ${pipelineSection()}
+                ${versionFragmentationSection()}
                 <main class="grid" id="grid"></main>
                 <footer>Durations shown in milliseconds. Charts are interactive (hover for details).</footer>
                 <script>
@@ -158,6 +167,21 @@ class HtmlOutput(
                 """.trimIndent()
             )
         }
+    }
+
+    private fun versionFragmentationSection(): String {
+        val drift = transforms.librariesWithMultipleVersions()
+        if (drift.isEmpty()) return ""
+        val rows = drift.joinToString("") { (library, versions) ->
+            """<tr><td>${library.escapeXml()}</td><td>${versions.size}</td><td>${versions.joinToString(", ").escapeXml()}</td></tr>"""
+        }
+        return """
+            <section class="card pipeline">
+              <h2>Dependencies transformed under multiple versions (${drift.size})</h2>
+              <p class="hint">Each distinct version is fingerprinted and transformed separately; aligning versions removes duplicated transform work. Variant-only differences (-api / -runtime) are normalized out.</p>
+              <div class="scroll"><table class="frag"><thead><tr><th>Library</th><th>Versions</th><th>Detail</th></tr></thead><tbody>$rows</tbody></table></div>
+            </section>
+        """.trimIndent()
     }
 
     private fun pipelineSection(): String {
@@ -265,6 +289,24 @@ class HtmlOutput(
             addSpec(
                 "countByType", "bar", "x", "Count by transform type",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
+            )
+        }
+        transforms.durationByProvider().let { data ->
+            addSpec(
+                "durationByProvider", "bar", "x", "Transform duration by tool / plugin",
+                data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
+            )
+        }
+        transforms.durationBySourceCategory().let { data ->
+            addSpec(
+                "durationBySource", "bar", "x", "Transform duration by source category",
+                data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
+            )
+        }
+        transforms.durationByModule().take(10).let { data ->
+            addSpec(
+                "durationByModule", "bar", "y", "Transform duration by first-party module",
+                data.map { it.first }, data.map { it.second.toLong() }, "Duration (ms)"
             )
         }
         transforms.durationByAttributeTransition().take(10).let { data ->

@@ -279,4 +279,95 @@ class ArtifactTransformTests {
         assertEquals(3, levels["classes"])
         assertEquals(3, levels["snapshot"])
     }
+
+    private fun transform(action: String, input: String, duration: String) =
+        ArtifactTransform("e", action, input, "success", "executed_cacheable", duration, null, "0", "0", arrayOf(), "b")
+
+    private val providerSample = listOf(
+        transform("com.android.build.gradle.internal.dependency.AarTransform", "foo-1.0.aar", "100"),
+        transform("com.android.build.gradle.internal.dependency.AarToClassTransform", "bar-1.0.aar", "50"),
+        transform("org.jetbrains.kotlin.gradle.internal.transforms.ClasspathEntrySnapshotTransform", "kotlin-stdlib-2.0.jar", "30"),
+        transform("org.jetbrains.kotlin.gradle.internal.kapt.incremental.KaptTransform", "classes.jar", "5"),
+        transform("dagger.hilt.android.plugin.transform.AggregatedPackagesTransform", "classes.jar", "20"),
+    )
+
+    @Test
+    fun `test provider classification`() {
+        assertEquals("Android/AGP", providerSample[0].provider())
+        assertEquals("Kotlin", providerSample[2].provider())
+        assertEquals("Kotlin kapt", providerSample[3].provider())
+        assertEquals("Hilt/Dagger", providerSample[4].provider())
+    }
+
+    @Test
+    fun `test durationByProvider`() {
+        val byProvider = providerSample.durationByProvider().toMap()
+        assertEquals(150, byProvider["Android/AGP"]) // 100 + 50
+        assertEquals(30, byProvider["Kotlin"])
+        assertEquals(5, byProvider["Kotlin kapt"])
+        assertEquals(20, byProvider["Hilt/Dagger"])
+    }
+
+    @Test
+    fun `test parsedInputArtifact`() {
+        assertEquals(ParsedArtifact("groovy-ant", "4.0.29"), transform("X", "groovy-ant-4.0.29.jar", "1").parsedInputArtifact())
+        assertEquals(ParsedArtifact("appcompat-resources", "1.7.1-runtime"), transform("X", "appcompat-resources-1.7.1-runtime.jar", "1").parsedInputArtifact())
+        // project/module outputs have no version -> first-party
+        val firstParty = transform("X", "classes.jar", "1").parsedInputArtifact()
+        assertEquals(ParsedArtifact("classes.jar", null), firstParty)
+        assertEquals(false, firstParty.isExternalDependency)
+    }
+
+    // execName prefix carries the source: project module, GAV, or bare file
+    private fun sourced(execName: String, duration: String) =
+        ArtifactTransform(execName, "T", "classes.jar", "success", "executed_cacheable", duration, null, "0", "0", arrayOf(), "b")
+
+    private val sourceSample = listOf(
+        sourced("project :core:cart [artifactType=android-classes]", "100"),
+        sourced("project :core:cart [artifactType=android-dex]", "50"),
+        sourced("project :feature:home [artifactType=android-classes]", "30"),
+        sourced("androidx.appcompat:appcompat:1.7.0 [artifactType=jar]", "200"),
+        sourced("classes.jar [artifactType=android-classes]", "5"),
+    )
+
+    @Test
+    fun `test source classification`() {
+        assertEquals(":core:cart", sourceSample[0].sourceModule())
+        assertEquals("First-party module", sourceSample[0].sourceCategory())
+        assertEquals(null, sourceSample[3].sourceModule())
+        assertEquals("External dependency", sourceSample[3].sourceCategory())
+        assertEquals("Unattributed file", sourceSample[4].sourceCategory())
+    }
+
+    @Test
+    fun `test durationBySourceCategory`() {
+        val byCategory = sourceSample.durationBySourceCategory().toMap()
+        assertEquals(180, byCategory["First-party module"]) // 100 + 50 + 30
+        assertEquals(200, byCategory["External dependency"])
+        assertEquals(5, byCategory["Unattributed file"])
+    }
+
+    @Test
+    fun `test durationByModule`() {
+        val byModule = sourceSample.durationByModule()
+        assertEquals(":core:cart" to 150, byModule[0]) // 100 + 50
+        assertEquals(":feature:home" to 30, byModule[1])
+    }
+
+    @Test
+    fun `test librariesWithMultipleVersions normalizes variants`() {
+        val sample = listOf(
+            transform("X", "transition-1.5.0.jar", "1"),
+            transform("X", "transition-1.5.0-api.jar", "1"),
+            transform("X", "transition-1.6.0.jar", "1"),
+            transform("X", "appcompat-1.7.1.jar", "1"),
+            transform("X", "appcompat-1.7.1-runtime.jar", "1"),
+            transform("X", "classes.jar", "1"),
+        )
+        val drift = sample.librariesWithMultipleVersions().toMap()
+        // transition has genuine drift 1.5.0 vs 1.6.0
+        assertEquals(listOf("1.5.0", "1.6.0"), drift["transition"])
+        // appcompat only differs by -runtime variant -> normalized to one version -> not reported
+        assertEquals(null, drift["appcompat"])
+    }
 }

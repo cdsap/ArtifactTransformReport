@@ -225,6 +225,97 @@ fun List<ArtifactTransform>.countByBuildScan(): List<Pair<String, Int>> =
         .toList()
         .sortedByDescending { it.second }
 
+// --- Prototype: tool/plugin attribution (#1) ---
+// transformActionType is a fully-qualified class name; its package identifies the plugin/ecosystem
+// that contributed the transform.
+
+fun ArtifactTransform.provider(): String {
+    val type = transformActionType
+    return when {
+        type.contains("kapt") -> "Kotlin kapt"
+        type.contains("org.jetbrains.kotlin") -> "Kotlin"
+        type.contains("com.android") -> "Android/AGP"
+        type.contains("dagger") || type.contains("hilt") -> "Hilt/Dagger"
+        type.startsWith("org.gradle") -> "Gradle"
+        else -> type.substringBeforeLast(".", "").ifEmpty { "other" }
+    }
+}
+
+fun List<ArtifactTransform>.durationByProvider(): List<Pair<String, Int>> =
+    this.groupBy { it.provider() }
+        .mapValues { (_, values) -> values.sumOf { it.duration.toMillisOrZero() } }
+        .toList()
+        .sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.countByProvider(): List<Pair<String, Int>> =
+    this.groupingBy { it.provider() }
+        .eachCount()
+        .toList()
+        .sortedByDescending { it.second }
+
+// --- Prototype: source attribution (#2) ---
+// artifactTransformExecutionName's prefix (before " [") is the logical source of the input:
+//  - "project :path" for a first-party Gradle module
+//  - a "group:name:version" coordinate for an external dependency
+//  - otherwise a bare file name with no project/coordinate provenance (e.g. classes.jar, android.jar)
+
+fun ArtifactTransform.transformSource(): String =
+    artifactTransformExecutionName.substringBefore(" [")
+
+fun ArtifactTransform.sourceModule(): String? =
+    transformSource().takeIf { it.startsWith("project ") }?.removePrefix("project ")
+
+fun ArtifactTransform.sourceCategory(): String {
+    val source = transformSource()
+    return when {
+        source.startsWith("project ") -> "First-party module"
+        source.count { it == ':' } >= 2 -> "External dependency"
+        else -> "Unattributed file"
+    }
+}
+
+fun List<ArtifactTransform>.durationBySourceCategory(): List<Pair<String, Int>> =
+    this.groupBy { it.sourceCategory() }
+        .mapValues { (_, values) -> values.sumOf { it.duration.toMillisOrZero() } }
+        .toList()
+        .sortedByDescending { it.second }
+
+fun List<ArtifactTransform>.durationByModule(): List<Pair<String, Int>> =
+    this.mapNotNull { transform -> transform.sourceModule()?.let { it to transform.duration.toMillisOrZero() } }
+        .groupBy { it.first }
+        .mapValues { (_, pairs) -> pairs.sumOf { it.second } }
+        .toList()
+        .sortedByDescending { it.second }
+
+// inputArtifactName is the resolved artifact file; external dependencies follow
+// <library>-<version>.<jar|aar>. Used to flag dependency version drift.
+
+private val VERSIONED_ARTIFACT = Regex("^(.+?)-(\\d[A-Za-z0-9.\\-]*)\\.(jar|aar)$")
+
+data class ParsedArtifact(val library: String, val version: String?) {
+    val isExternalDependency: Boolean get() = version != null
+}
+
+fun ArtifactTransform.parsedInputArtifact(): ParsedArtifact {
+    val match = VERSIONED_ARTIFACT.matchEntire(inputArtifactName)
+    return if (match != null) {
+        ParsedArtifact(match.groupValues[1], match.groupValues[2])
+    } else {
+        ParsedArtifact(inputArtifactName, null)
+    }
+}
+
+private fun String.normalizedVersion(): String = removeSuffix("-runtime").removeSuffix("-api")
+
+/** Libraries transformed under more than one (variant-normalized) version — dependency drift. */
+fun List<ArtifactTransform>.librariesWithMultipleVersions(): List<Pair<String, List<String>>> =
+    this.mapNotNull { transform -> transform.parsedInputArtifact().takeIf { it.isExternalDependency } }
+        .groupBy { it.library }
+        .mapValues { (_, parsed) -> parsed.map { it.version!!.normalizedVersion() }.distinct().sorted() }
+        .filter { it.value.size > 1 }
+        .toList()
+        .sortedByDescending { it.second.size }
+
 // --- Tier 1: artifact transform pipeline (changed-attribute graph) ---
 // Each transform turns an input artifact type (`from`) into an output type (`to`). One transform's
 // output type is consumed as the input of the next, so the aggregated from->to edges describe the
