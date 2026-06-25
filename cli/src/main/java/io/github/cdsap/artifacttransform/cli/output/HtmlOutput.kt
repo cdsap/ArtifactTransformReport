@@ -15,7 +15,11 @@ import io.github.cdsap.artifacttransform.cacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.countByBuildScan
 import io.github.cdsap.artifacttransform.dependencyFamiliesFragmentedWithinBuild
 import io.github.cdsap.artifacttransform.durationByAttributeTransition
+import io.github.cdsap.artifacttransform.durationByAvoidanceOutcome
 import io.github.cdsap.artifacttransform.durationByBuildScan
+import io.github.cdsap.artifacttransform.durationByOutcome
+import io.github.cdsap.artifacttransform.groupByAvoidanceOutcome
+import io.github.cdsap.artifacttransform.groupByOutcome
 import io.github.cdsap.artifacttransform.outlierBuildScans
 import io.github.cdsap.artifacttransform.slowestTransformByBuildScan
 import io.github.cdsap.artifacttransform.topTransformTypeByBuildScan
@@ -133,10 +137,10 @@ class HtmlOutput(
                   $savingsStat
                 </section>
                 ${pipelineSection()}
-                ${versionFragmentationSection()}
                 ${negativeAvoidanceSection()}
                 ${buildLevelSection()}
                 <main class="grid" id="grid"></main>
+                ${versionFragmentationSection()}
                 <footer>Charts are interactive (hover for full labels and values).</footer>
                 <script>
                   const CHARTS = $chartsJson;
@@ -417,6 +421,30 @@ class HtmlOutput(
             addSpec(
                 "countByType", "bar", "x", "Count by transform type",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
+            )
+        }
+        transforms.groupByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
+            addSpec(
+                "countByAvoidanceOutcome", "doughnut", "x", "Transforms by avoidance outcome",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
+            )
+        }
+        transforms.durationByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
+            addSpec(
+                "durationByAvoidanceOutcome", "bar", "x", "Duration by avoidance outcome",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
+            )
+        }
+        transforms.groupByOutcome().toList().sortedByDescending { it.second }.let { data ->
+            addSpec(
+                "countByOutcome", "doughnut", "x", "Transforms by outcome",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
+            )
+        }
+        transforms.durationByOutcome().toList().sortedByDescending { it.second }.let { data ->
+            addSpec(
+                "durationByOutcome", "bar", "x", "Duration by outcome",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
             )
         }
         transforms.durationByProvider().let { data ->
