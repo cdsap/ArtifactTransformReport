@@ -20,6 +20,9 @@ The cli summarizes the information in the console including the following sectio
 * Duration by outcome/avoidance outcome
 * Longest Negative Avoidance savings
 * Heaviest cache size Artifact transforms
+* Cache effectiveness by type (hit rate and avoidable cache misses)
+* Duration and count by changed-attribute transition
+* Duration and count by Build Scan
 
 ```kotlin
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -101,6 +104,16 @@ The cli summarizes the information in the console including the following sectio
 
 #### Summary text file
 Text file with the same information displayed in the console
+
+#### HTML report
+A self-contained, interactive HTML report (`artifact-transforms-<timestamp>.html`) with charts for
+duration/count by type, the avoidance-outcome breakdown, cache-effectiveness (avoidable misses),
+changed-attribute transitions, slowest transforms, dependencies, and per-build-scan duration.
+It also includes a **negative avoidance savings** section: a per-transform-type table of the
+transforms where reusing the cached output cost more time than re-executing it (negative
+`avoidanceSavings`), showing the negative count, aggregated time lost, and worst single case — useful
+for spotting caching that is a net loss. The section is omitted when no transform has negative
+savings. Chart.js is inlined, so the report renders offline with no external requests.
 
 #### CSV
 Complete list of artifact transforms by entity:
