@@ -134,6 +134,7 @@ class HtmlOutput(
                 </section>
                 ${pipelineSection()}
                 ${versionFragmentationSection()}
+                ${negativeAvoidanceSection()}
                 ${buildLevelSection()}
                 <main class="grid" id="grid"></main>
                 <footer>Charts are interactive (hover for full labels and values).</footer>
@@ -226,6 +227,35 @@ class HtmlOutput(
               <h2>Dependencies transformed under multiple versions (${fragmented.size})</h2>
               <p class="hint">Each distinct version is fingerprinted and transformed separately; aligning versions removes duplicated transform work.</p>
               <div class="scroll"><table class="frag"><thead><tr><th>Family</th><th>Versions</th><th>Detail</th><th>Count</th><th>Duration</th><th>Cache size</th><th>Most expensive</th></tr></thead><tbody>$rows</tbody></table></div>
+            </section>
+        """.trimIndent()
+    }
+
+    /**
+     * Transforms whose `avoidanceSavings` is negative — reusing the cached output cost more time than
+     * re-executing it. Aggregated per transform type with the count, total time lost, and worst single
+     * case, so the report flags caching that is a net loss. Hidden entirely when there are none.
+     */
+    private fun negativeAvoidanceSection(): String {
+        val negativeByType = transforms
+            .mapNotNull { t -> t.avoidanceSavings?.toIntOrNull()?.let { t to it } }
+            .filter { it.second < 0 }
+            .groupBy { it.first.transformActionType }
+        if (negativeByType.isEmpty()) return ""
+
+        val rows = negativeByType
+            .map { (type, pairs) -> Triple(type, pairs.size, pairs.sumOf { it.second }) }
+            .sortedBy { it.third }
+            .joinToString("") { (type, count, aggregated) ->
+                val worst = negativeByType.getValue(type).minOf { it.second }
+                """<tr><td>${type.extractName().escapeXml()}</td><td>$count</td>""" +
+                    """<td>${formatMsValue(aggregated)}</td><td>${formatMsValue(worst)}</td></tr>"""
+            }
+        return """
+            <section class="card pipeline">
+              <h2>Negative avoidance savings by transform type</h2>
+              <p class="hint">Transforms where reusing the cached output cost more time than re-executing it (negative savings). Total time lost and worst single case per type — candidates for fixing transform cacheability or disabling caching.</p>
+              <div class="scroll"><table class="frag"><thead><tr><th>Transform type</th><th>Negative count</th><th>Aggregated lost</th><th>Worst single</th></tr></thead><tbody>$rows</tbody></table></div>
             </section>
         """.trimIndent()
     }
@@ -490,10 +520,14 @@ class HtmlOutput(
         else -> "$bytes B"
     }
 
-    private fun formatMsValue(ms: Int): String = when {
-        ms >= 60_000 -> "${(ms / 60_000.0).roundTo(1)} min"
-        ms >= 1_000 -> "${(ms / 1_000.0).roundTo(1)} s"
-        else -> "$ms ms"
+    private fun formatMsValue(ms: Int): String {
+        val abs = Math.abs(ms)
+        val formatted = when {
+            abs >= 60_000 -> "${(abs / 60_000.0).roundTo(1)} min"
+            abs >= 1_000 -> "${(abs / 1_000.0).roundTo(1)} s"
+            else -> "$abs ms"
+        }
+        return if (ms < 0) "-$formatted" else formatted
     }
 
     private fun Double.roundTo(decimals: Int): Double {
