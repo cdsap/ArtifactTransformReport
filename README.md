@@ -128,7 +128,7 @@ org.jetbrains.kotlin.gradle.internal.transforms.ClasspathEntrySnapshotTransform,
 #### Using Binary
 Github release repository contains the ArtifactTransformReport binary. After downloading the binary you can execute:
 ```
- curl -L https://github.com/cdsap/ArtifactTransformReport/releases/download/v0.1.1/artifacttransform --output artifacttransform
+ curl -L https://github.com/cdsap/ArtifactTransformReport/releases/download/v0.2.0/artifacttransform --output artifacttransform
  chmod 0757 artifacttransform
 ./artifacttransform --api-key=$KEY --url=$URL --project nowinandroid
 ```
@@ -165,7 +165,7 @@ cd cli
 
 If you don't want to use the CLI, we are providing a dependency to retrieve the Artifact transforms:
 ```kotlin
-implementation("io.github.cdsap:artifacttransform:0.1")
+implementation("io.github.cdsap:artifacttransform:0.2.0")
 ```
 ### Usage
 Retrieve artifact transforms of the last 50 builds of the project nowinandroid:

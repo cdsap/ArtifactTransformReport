@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.cdsap"
-version = "0.1"
+version = "0.2.0"
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
@@ -27,7 +27,7 @@ configure<JavaPluginExtension> {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.cdsap", "artifacttransform", "0.1")
+    coordinates("io.github.cdsap", "artifacttransform", "0.2.0")
 
     pom {
         scm {
