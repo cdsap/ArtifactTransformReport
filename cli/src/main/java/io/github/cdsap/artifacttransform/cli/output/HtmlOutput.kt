@@ -46,7 +46,8 @@ import java.io.File
  */
 class HtmlOutput(
     private val transforms: List<ArtifactTransform>,
-    private val single: Boolean
+    private val single: Boolean,
+    private val timestamp: Long
 ) {
     private data class ChartSpec(
         val id: String,
@@ -60,7 +61,7 @@ class HtmlOutput(
 
     fun writeHtml() {
         val prefixFile = if (single) "single-" else ""
-        val html = "${prefixFile}artifact-transforms-${System.currentTimeMillis()}.html"
+        val html = "${prefixFile}artifact-transforms-$timestamp.html"
         val startTimestamp = System.currentTimeMillis()
         File(html).writeText(render())
         val endTime = System.currentTimeMillis()
@@ -138,8 +139,8 @@ class HtmlOutput(
                 </section>
                 ${pipelineSection()}
                 ${negativeAvoidanceSection()}
-                ${buildLevelSection()}
                 <main class="grid" id="grid"></main>
+                ${buildLevelSection()}
                 ${versionFragmentationSection()}
                 <footer>Charts are interactive (hover for full labels and values).</footer>
                 <script>

@@ -14,10 +14,11 @@ class SingleArtifactTransformReport(
     suspend fun process() {
         val transforms = GetSingleArtifactTransform(repository).get(buildScanId)
         if (transforms.isNotEmpty()) {
+            val timestamp = System.currentTimeMillis()
             println("Build $buildScanId - Total Artifact transforms: ${transforms.size} ")
-            ArtifactTransformView(transforms, true).print()
-            CsvOutput(transforms, true).writeCsv()
-            HtmlOutput(transforms, true).writeHtml()
+            ArtifactTransformView(transforms, true, timestamp).print()
+            CsvOutput(transforms, true, timestamp).writeCsv()
+            HtmlOutput(transforms, true, timestamp).writeHtml()
         }
     }
 }

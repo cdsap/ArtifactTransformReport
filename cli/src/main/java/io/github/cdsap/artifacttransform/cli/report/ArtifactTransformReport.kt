@@ -15,11 +15,12 @@ class ArtifactTransformReport(
     suspend fun process() {
         val transforms = GetArtifactTransforms(filter, repository).get()
         if (transforms.isNotEmpty()) {
+            val timestamp = System.currentTimeMillis()
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
-            ArtifactTransformView(transforms, false).print()
-            CsvOutput(transforms, false).writeCsv()
-            HtmlOutput(transforms, false).writeHtml()
+            ArtifactTransformView(transforms, false, timestamp).print()
+            CsvOutput(transforms, false, timestamp).writeCsv()
+            HtmlOutput(transforms, false, timestamp).writeHtml()
         }
     }
 }

@@ -6,7 +6,8 @@ import java.io.File
 
 class ArtifactTransformView(
     val transforms: List<ArtifactTransform>,
-    val singleReport: Boolean
+    val singleReport: Boolean,
+    val timestamp: Long
 ) {
 
     fun print() {
@@ -33,7 +34,7 @@ class ArtifactTransformView(
         buildScanView.print()
 
         val prefixFile = if (singleReport) "single-" else ""
-        val txt = "${prefixFile}summary-artifact-transforms-${System.currentTimeMillis()}.txt"
+        val txt = "${prefixFile}summary-artifact-transforms-$timestamp.txt"
         val startTimestamp = System.currentTimeMillis()
         File(txt).writeText(
             outcomeView.generateReport().renderText() +
