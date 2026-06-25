@@ -425,7 +425,7 @@ class HtmlOutput(
         }
         transforms.groupByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
             addSpec(
-                "countByAvoidanceOutcome", "doughnut", "x", "Transforms by avoidance outcome",
+                "countByAvoidanceOutcome", "bar", "x", "Transforms by avoidance outcome",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
             )
         }
@@ -437,7 +437,7 @@ class HtmlOutput(
         }
         transforms.groupByOutcome().toList().sortedByDescending { it.second }.let { data ->
             addSpec(
-                "countByOutcome", "doughnut", "x", "Transforms by outcome",
+                "countByOutcome", "bar", "x", "Transforms by outcome",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
             )
         }
