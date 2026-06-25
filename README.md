@@ -109,7 +109,11 @@ Text file with the same information displayed in the console
 A self-contained, interactive HTML report (`artifact-transforms-<timestamp>.html`) with charts for
 duration/count by type, the avoidance-outcome breakdown, cache-effectiveness (avoidable misses),
 changed-attribute transitions, slowest transforms, dependencies, and per-build-scan duration.
-Chart.js is inlined, so the report renders offline with no external requests.
+It also includes a **negative avoidance savings** section: a per-transform-type table of the
+transforms where reusing the cached output cost more time than re-executing it (negative
+`avoidanceSavings`), showing the negative count, aggregated time lost, and worst single case — useful
+for spotting caching that is a net loss. The section is omitted when no transform has negative
+savings. Chart.js is inlined, so the report renders offline with no external requests.
 
 #### CSV
 Complete list of artifact transforms by entity:
