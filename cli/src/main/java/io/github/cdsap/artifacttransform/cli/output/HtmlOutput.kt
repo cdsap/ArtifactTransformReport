@@ -141,6 +141,7 @@ class HtmlOutput(
                   $savingsStat
                 </section>
                 ${pipelineSection()}
+                ${outcomeTablesSection()}
                 ${negativeAvoidanceSection()}
                 <main class="grid" id="grid"></main>
                 ${buildLevelSection()}
@@ -237,6 +238,54 @@ class HtmlOutput(
               <div class="scroll"><table class="frag"><thead><tr><th>Family</th><th>Versions</th><th>Detail</th><th>Count</th><th>Duration</th><th>Cache size</th><th>Most expensive</th></tr></thead><tbody>$rows</tbody></table></div>
             </section>
         """.trimIndent()
+    }
+
+    /**
+     * Console-style outcome tables: one row per outcome with count, duration, average duration,
+     * fingerprinting and average fingerprinting side by side — mirroring the OutcomeView and
+     * AvoidanceSavingsOutcomeView text tables. A table keeps the correlated metrics together, which
+     * separate single-metric charts cannot.
+     */
+    private fun outcomeTablesSection(): String {
+        fun table(
+            title: String,
+            hint: String,
+            counts: Map<String, Int>,
+            durations: Map<String, Int>,
+            fingerprints: Map<String, Int>
+        ): String {
+            if (counts.isEmpty()) return ""
+            val rows = counts.entries.sortedByDescending { it.value }.joinToString("") { (outcome, count) ->
+                val duration = durations[outcome] ?: 0
+                val finger = fingerprints[outcome] ?: 0
+                val avgDuration = if (count > 0) duration / count else 0
+                val avgFinger = if (count > 0) finger / count else 0
+                """<tr><td>${outcome.escapeXml()}</td><td>$count</td>""" +
+                    """<td>${formatMsValue(duration)}</td><td>${formatMsValue(avgDuration)}</td>""" +
+                    """<td>${formatMsValue(finger)}</td><td>${formatMsValue(avgFinger)}</td></tr>"""
+            }
+            return """
+                <section class="card pipeline">
+                  <h2>$title</h2>
+                  <p class="hint">$hint</p>
+                  <div class="scroll"><table class="frag"><thead><tr><th>Outcome</th><th>Count</th><th>Duration</th><th>Avg duration</th><th>Fingerprinting</th><th>Avg fingerprinting</th></tr></thead><tbody>$rows</tbody></table></div>
+                </section>
+            """.trimIndent()
+        }
+        return table(
+            "Transforms by avoidance outcome",
+            "How transforms resolved against the cache (avoided_* = reused, executed_* = ran). " +
+                "Total and per-transform-average duration and fingerprinting time.",
+            transforms.groupByAvoidanceOutcome(),
+            transforms.durationByAvoidanceOutcome(),
+            transforms.fingerprintingByAvoidanceOutcome()
+        ) + table(
+            "Transforms by outcome",
+            "Execution outcome of each transform (from_cache, up_to_date, success, ...).",
+            transforms.groupByOutcome(),
+            transforms.durationByOutcome(),
+            transforms.fingerprintingByOutcome()
+        )
     }
 
     /**
@@ -427,45 +476,9 @@ class HtmlOutput(
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
             )
         }
-        transforms.groupByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "countByAvoidanceOutcome", "bar", "x", "Transforms by avoidance outcome",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
-            )
-        }
-        transforms.durationByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "durationByAvoidanceOutcome", "bar", "x", "Duration by avoidance outcome",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
-            )
-        }
-        transforms.groupByOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "countByOutcome", "bar", "x", "Transforms by outcome",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Count"
-            )
-        }
-        transforms.durationByOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "durationByOutcome", "bar", "x", "Duration by outcome",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
-            )
-        }
         transforms.fingerprintingByTransformActionType().take(10).let { data ->
             addSpec(
                 "fingerprintByType", "bar", "x", "Fingerprinting duration by transform type",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Fingerprinting (ms)"
-            )
-        }
-        transforms.fingerprintingByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "fingerprintByAvoidanceOutcome", "bar", "x", "Fingerprinting duration by avoidance outcome",
-                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Fingerprinting (ms)"
-            )
-        }
-        transforms.fingerprintingByOutcome().toList().sortedByDescending { it.second }.let { data ->
-            addSpec(
-                "fingerprintByOutcome", "bar", "x", "Fingerprinting duration by outcome",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Fingerprinting (ms)"
             )
         }
