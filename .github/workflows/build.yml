@@ -66,9 +66,10 @@ jobs:
                 if [ ${#html[@]} -eq 0 ]; then echo "::error::No HTML report was generated"; exit 1; fi
                 if [ ${#csv[@]} -eq 0 ]; then echo "::error::No CSV report was generated"; exit 1; fi
                 if [ ${#txt[@]} -eq 0 ]; then echo "::error::No summary text report was generated"; exit 1; fi
-                # the HTML must be a self-contained report with Chart.js inlined (no external requests)
+                # the HTML must be a self-contained report (no external requests) with the expected sections
                 grep -q "Artifact Transform Report" "${html[0]}" || { echo "::error::HTML report missing expected title"; exit 1; }
-                grep -q "Chart.js v4" "${html[0]}" || { echo "::error::HTML report is missing the inlined Chart.js"; exit 1; }
+                grep -q "Artifact transform pipeline" "${html[0]}" || { echo "::error::HTML report is missing the pipeline diagram"; exit 1; }
+                grep -q "Transforms by avoidance outcome" "${html[0]}" || { echo "::error::HTML report is missing the outcome tables"; exit 1; }
                 echo "HTML report verified: ${html[0]}"
             - name: Archive production artifacts
               uses: actions/upload-artifact@v7
