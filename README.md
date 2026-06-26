@@ -115,6 +115,14 @@ transforms where reusing the cached output cost more time than re-executing it (
 for spotting caching that is a net loss. The section is omitted when no transform has negative
 savings. Chart.js is inlined, so the report renders offline with no external requests.
 
+The report opens with headline stats and the inferred artifact transform pipeline:
+
+![HTML report overview and artifact transform pipeline](docs/images/html-report-overview.png)
+
+followed by the interactive charts (duration by dependency, slowest transforms, cache size by type, and more):
+
+![HTML report charts](docs/images/html-report-charts.png)
+
 #### CSV
 Complete list of artifact transforms by entity:
 ```csv
