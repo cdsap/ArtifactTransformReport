@@ -29,6 +29,9 @@ import io.github.cdsap.artifacttransform.durationByProvider
 import io.github.cdsap.artifacttransform.durationBySourceCategory
 import io.github.cdsap.artifacttransform.durationByTransformActionType
 import io.github.cdsap.artifacttransform.extractName
+import io.github.cdsap.artifacttransform.fingerprintingByAvoidanceOutcome
+import io.github.cdsap.artifacttransform.fingerprintingByOutcome
+import io.github.cdsap.artifacttransform.fingerprintingByTransformActionType
 import io.github.cdsap.artifacttransform.medianDurationByTransformActionType
 import io.github.cdsap.artifacttransform.overallCacheHitRate
 import io.github.cdsap.artifacttransform.sortedByDurationDescending
@@ -446,6 +449,24 @@ class HtmlOutput(
             addSpec(
                 "durationByOutcome", "bar", "x", "Duration by outcome",
                 data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Duration (ms)"
+            )
+        }
+        transforms.fingerprintingByTransformActionType().take(10).let { data ->
+            addSpec(
+                "fingerprintByType", "bar", "x", "Fingerprinting duration by transform type",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Fingerprinting (ms)"
+            )
+        }
+        transforms.fingerprintingByAvoidanceOutcome().toList().sortedByDescending { it.second }.let { data ->
+            addSpec(
+                "fingerprintByAvoidanceOutcome", "bar", "x", "Fingerprinting duration by avoidance outcome",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Fingerprinting (ms)"
+            )
+        }
+        transforms.fingerprintingByOutcome().toList().sortedByDescending { it.second }.let { data ->
+            addSpec(
+                "fingerprintByOutcome", "bar", "x", "Fingerprinting duration by outcome",
+                data.map { it.first.extractName() }, data.map { it.second.toLong() }, "Fingerprinting (ms)"
             )
         }
         transforms.durationByProvider().let { data ->
