@@ -1,0 +1,90 @@
+name: Latest Release Single Build Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_scan_id:
+        description: Build scan id to analyze
+        required: true
+        type: string
+
+jobs:
+  run-report:
+    name: Run latest release for build scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GE_API_KEY: ${{ secrets.GE_API_KEY }}
+      GE_URL: ${{ secrets.GE_URL }}
+      BUILD_SCAN_ID: ${{ inputs.build_scan_id }}
+
+    steps:
+      - name: Validate inputs
+        run: |
+          if [ -z "${BUILD_SCAN_ID}" ]; then
+            echo "::error::build_scan_id input is required"
+            exit 1
+          fi
+          if [ -z "${GE_API_KEY}" ]; then
+            echo "::error::GE_API_KEY secret is required"
+            exit 1
+          fi
+          if [ -z "${GE_URL}" ]; then
+            echo "::error::GE_URL secret is required"
+            exit 1
+          fi
+
+      - name: Download latest release binary
+        run: |
+          curl --fail --location --show-error \
+            https://github.com/cdsap/ArtifactTransformReport/releases/latest/download/artifacttransform \
+            --output artifacttransform
+          chmod 0757 artifacttransform
+          ./artifacttransform --help
+
+      - name: Run report for build scan
+        run: |
+          ./artifacttransform \
+            --api-key="${GE_API_KEY}" \
+            --url="${GE_URL}" \
+            --build-scan-id="${BUILD_SCAN_ID}"
+
+      - name: Verify report outputs were generated
+        run: |
+          shopt -s nullglob
+          html=( artifact-transforms-*.html )
+          csv=( artifact-transforms-*.csv )
+          txt=( summary-artifact-transforms-*.txt )
+
+          echo "HTML: ${html[*]:-<none>}"
+          echo "CSV:  ${csv[*]:-<none>}"
+          echo "TXT:  ${txt[*]:-<none>}"
+
+          if [ ${#html[@]} -eq 0 ]; then echo "::error::No HTML report was generated"; exit 1; fi
+          if [ ${#csv[@]} -eq 0 ]; then echo "::error::No CSV report was generated"; exit 1; fi
+          if [ ${#txt[@]} -eq 0 ]; then echo "::error::No summary text report was generated"; exit 1; fi
+
+          grep -q "Artifact Transform Report" "${html[0]}" || {
+            echo "::error::HTML report missing expected title"
+            exit 1
+          }
+
+          {
+            echo "## ArtifactTransformReport"
+            echo
+            echo "- Build scan id: \`${BUILD_SCAN_ID}\`"
+            echo "- HTML report: \`${html[0]}\`"
+            echo "- CSV report: \`${csv[0]}\`"
+            echo "- Summary report: \`${txt[0]}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: artifact-transform-report-${{ inputs.build_scan_id }}
+          path: |
+            artifact-transforms-*.html
+            artifact-transforms-*.csv
+            summary-artifact-transforms-*.txt
+          if-no-files-found: warn
