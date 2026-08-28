@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportOutputsTest {
+class ReportOutputWriterTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
 
@@ -50,7 +50,7 @@ class ArtifactTransformReportOutputsTest {
     fun `multi-build path writes text csv and html without single prefix`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportOutputs(sampleTransforms, false, timestamp) {
+                ReportOutputWriter(sampleTransforms, false, timestamp) {
                     println("Total Artifact transforms: ${sampleTransforms.size}")
                 }.write()
             }
@@ -81,7 +81,7 @@ class ArtifactTransformReportOutputsTest {
     fun `single-build path writes text csv and html with single prefix`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportOutputs(sampleTransforms, true, timestamp) {
+                ReportOutputWriter(sampleTransforms, true, timestamp) {
                     println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
                 }.write()
             }
@@ -107,7 +107,7 @@ class ArtifactTransformReportOutputsTest {
         var summaryCalled = false
         val stdout =
             captureStdout {
-                ArtifactTransformReportOutputs(emptyList(), false, timestamp) {
+                ReportOutputWriter(emptyList(), false, timestamp) {
                     summaryCalled = true
                     println("should not print")
                 }.write()
