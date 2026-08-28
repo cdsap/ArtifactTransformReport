@@ -1,0 +1,135 @@
+name: Latest Release Multiple Build Reports
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_scan_ids:
+        description: Build scan ids to analyze, separated by new lines, commas, or spaces
+        required: true
+        type: string
+
+jobs:
+  run-reports:
+    name: Run latest release for build scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GE_API_KEY: ${{ secrets.GE_API_KEY }}
+      GE_URL: ${{ secrets.GE_URL }}
+      BUILD_SCAN_IDS: ${{ inputs.build_scan_ids }}
+
+    steps:
+      - name: Validate inputs
+        run: |
+          if [ -z "${BUILD_SCAN_IDS}" ]; then
+            echo "::error::build_scan_ids input is required"
+            exit 1
+          fi
+          if [ -z "${GE_API_KEY}" ]; then
+            echo "::error::GE_API_KEY secret is required"
+            exit 1
+          fi
+          if [ -z "${GE_URL}" ]; then
+            echo "::error::GE_URL secret is required"
+            exit 1
+          fi
+
+          normalized_ids="$(printf '%s\n' "${BUILD_SCAN_IDS}" | tr ',[:space:]' '\n' | sed '/^$/d')"
+          if [ -z "${normalized_ids}" ]; then
+            echo "::error::At least one build scan id is required"
+            exit 1
+          fi
+
+          {
+            echo "BUILD_SCAN_ID_LIST<<EOF"
+            printf '%s\n' "${normalized_ids}"
+            echo "EOF"
+          } >> "${GITHUB_ENV}"
+
+      - name: Download latest release binary
+        run: |
+          curl --fail --location --show-error \
+            https://github.com/cdsap/ArtifactTransformReport/releases/latest/download/artifacttransform \
+            --output artifacttransform
+          chmod 0757 artifacttransform
+          ./artifacttransform --help
+
+      - name: Run reports for build scans
+        run: |
+          mkdir -p reports
+          failures=0
+
+          while IFS= read -r build_scan_id; do
+            safe_id="$(printf '%s' "${build_scan_id}" | tr -c 'A-Za-z0-9._-' '-')"
+            report_dir="reports/${safe_id}"
+            mkdir -p "${report_dir}"
+
+            echo "::group::Build scan ${build_scan_id}"
+            (
+              cd "${report_dir}"
+              "${GITHUB_WORKSPACE}/artifacttransform" \
+                --api-key="${GE_API_KEY}" \
+                --url="${GE_URL}" \
+                --build-scan-id="${build_scan_id}"
+            ) || failures=$((failures + 1))
+            echo "::endgroup::"
+          done <<< "${BUILD_SCAN_ID_LIST}"
+
+          if [ "${failures}" -gt 0 ]; then
+            echo "::error::${failures} build scan report(s) failed"
+            exit 1
+          fi
+
+      - name: Verify report outputs were generated
+        run: |
+          failures=0
+          {
+            echo "## ArtifactTransformReport"
+            echo
+            echo "| Build scan id | HTML | CSV | Summary |"
+            echo "| --- | --- | --- | --- |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          while IFS= read -r build_scan_id; do
+            safe_id="$(printf '%s' "${build_scan_id}" | tr -c 'A-Za-z0-9._-' '-')"
+            report_dir="reports/${safe_id}"
+
+            shopt -s nullglob
+            html=( "${report_dir}"/*artifact-transforms-*.html )
+            csv=( "${report_dir}"/*artifact-transforms-*.csv )
+            txt=( "${report_dir}"/*summary-artifact-transforms-*.txt )
+            shopt -u nullglob
+
+            echo "Build scan id: ${build_scan_id}"
+            echo "HTML: ${html[*]:-<none>}"
+            echo "CSV:  ${csv[*]:-<none>}"
+            echo "TXT:  ${txt[*]:-<none>}"
+
+            if [ ${#html[@]} -eq 0 ]; then echo "::error::No HTML report was generated for ${build_scan_id}"; failures=$((failures + 1)); fi
+            if [ ${#csv[@]} -eq 0 ]; then echo "::error::No CSV report was generated for ${build_scan_id}"; failures=$((failures + 1)); fi
+            if [ ${#txt[@]} -eq 0 ]; then echo "::error::No summary text report was generated for ${build_scan_id}"; failures=$((failures + 1)); fi
+
+            if [ ${#html[@]} -gt 0 ]; then
+              grep -q "Artifact Transform Report" "${html[0]}" || {
+                echo "::error::HTML report missing expected title for ${build_scan_id}"
+                failures=$((failures + 1))
+              }
+            fi
+
+            {
+              echo "| \`${build_scan_id}\` | \`${html[0]:-missing}\` | \`${csv[0]:-missing}\` | \`${txt[0]:-missing}\` |"
+            } >> "${GITHUB_STEP_SUMMARY}"
+          done <<< "${BUILD_SCAN_ID_LIST}"
+
+          if [ "${failures}" -gt 0 ]; then
+            echo "::error::${failures} report verification check(s) failed"
+            exit 1
+          fi
+
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: artifact-transform-reports
+          path: reports/**
+          if-no-files-found: warn
