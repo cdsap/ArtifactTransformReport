@@ -52,9 +52,9 @@ jobs:
       - name: Verify report outputs were generated
         run: |
           shopt -s nullglob
-          html=( artifact-transforms-*.html )
-          csv=( artifact-transforms-*.csv )
-          txt=( summary-artifact-transforms-*.txt )
+          html=( *artifact-transforms-*.html )
+          csv=( *artifact-transforms-*.csv )
+          txt=( *summary-artifact-transforms-*.txt )
 
           echo "HTML: ${html[*]:-<none>}"
           echo "CSV:  ${csv[*]:-<none>}"
@@ -84,7 +84,7 @@ jobs:
         with:
           name: artifact-transform-report-${{ inputs.build_scan_id }}
           path: |
-            artifact-transforms-*.html
-            artifact-transforms-*.csv
-            summary-artifact-transforms-*.txt
+            *artifact-transforms-*.html
+            *artifact-transforms-*.csv
+            *summary-artifact-transforms-*.txt
           if-no-files-found: warn
