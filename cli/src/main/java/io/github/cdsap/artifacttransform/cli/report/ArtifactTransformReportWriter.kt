@@ -5,7 +5,7 @@ import io.github.cdsap.artifacttransform.cli.output.HtmlOutput
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-class ReportOutputWriter(
+class ArtifactTransformReportWriter(
     private val transforms: List<ArtifactTransform>,
     private val single: Boolean,
     private val timestamp: Long = System.currentTimeMillis(),
