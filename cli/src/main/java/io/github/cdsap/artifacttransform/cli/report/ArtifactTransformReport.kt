@@ -11,7 +11,7 @@ class ArtifactTransformReport(
 
     suspend fun process() {
         val transforms = GetArtifactTransforms(filter, repository).get()
-        ArtifactTransformReportOutputs(transforms, false) {
+        ReportOutputWriter(transforms, false) {
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
         }.write()
