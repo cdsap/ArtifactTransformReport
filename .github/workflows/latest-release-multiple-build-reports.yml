@@ -5,24 +5,34 @@ on:
     inputs:
       build_scan_ids:
         description: Build scan ids to analyze, separated by new lines, commas, or spaces
-        required: true
+        required: false
+        type: string
+      project:
+        description: Root project in Develocity to analyze
+        required: false
+        type: string
+      requested_task:
+        description: Requested task to filter builds by
+        required: false
         type: string
 
 jobs:
   run-reports:
-    name: Run latest release for build scans
+    name: Run latest release reports
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       GE_API_KEY: ${{ secrets.GE_API_KEY }}
       GE_URL: ${{ secrets.GE_URL }}
       BUILD_SCAN_IDS: ${{ inputs.build_scan_ids }}
+      PROJECT: ${{ inputs.project }}
+      REQUESTED_TASK: ${{ inputs.requested_task }}
 
     steps:
       - name: Validate inputs
         run: |
-          if [ -z "${BUILD_SCAN_IDS}" ]; then
-            echo "::error::build_scan_ids input is required"
+          if [ -z "${PROJECT}" ] && [ -z "${BUILD_SCAN_IDS}" ]; then
+            echo "::error::project or build_scan_ids input is required"
             exit 1
           fi
           if [ -z "${GE_API_KEY}" ]; then
@@ -34,17 +44,19 @@ jobs:
             exit 1
           fi
 
-          normalized_ids="$(printf '%s\n' "${BUILD_SCAN_IDS}" | tr ',[:space:]' '\n' | sed '/^$/d')"
-          if [ -z "${normalized_ids}" ]; then
-            echo "::error::At least one build scan id is required"
-            exit 1
-          fi
+          if [ -z "${PROJECT}" ]; then
+            normalized_ids="$(printf '%s\n' "${BUILD_SCAN_IDS}" | tr ',[:space:]' '\n' | sed '/^$/d')"
+            if [ -z "${normalized_ids}" ]; then
+              echo "::error::At least one build scan id is required"
+              exit 1
+            fi
 
-          {
-            echo "BUILD_SCAN_ID_LIST<<EOF"
-            printf '%s\n' "${normalized_ids}"
-            echo "EOF"
-          } >> "${GITHUB_ENV}"
+            {
+              echo "BUILD_SCAN_ID_LIST<<EOF"
+              printf '%s\n' "${normalized_ids}"
+              echo "EOF"
+            } >> "${GITHUB_ENV}"
+          fi
 
       - name: Download latest release binary
         run: |
@@ -54,7 +66,32 @@ jobs:
           chmod 0757 artifacttransform
           ./artifacttransform --help
 
+      - name: Run aggregate report for project
+        if: ${{ inputs.project != '' }}
+        run: |
+          safe_project="$(printf '%s' "${PROJECT}" | tr -c 'A-Za-z0-9._-' '-')"
+          safe_task="$(printf '%s' "${REQUESTED_TASK:-all-tasks}" | tr -c 'A-Za-z0-9._-' '-')"
+          report_dir="reports/${safe_project}-${safe_task}"
+          mkdir -p "${report_dir}"
+
+          args=(
+            --api-key="${GE_API_KEY}"
+            --url="${GE_URL}"
+            --project="${PROJECT}"
+            --max-builds=100
+          )
+
+          if [ -n "${REQUESTED_TASK}" ]; then
+            args+=(--requested-task="${REQUESTED_TASK}")
+          fi
+
+          (
+            cd "${report_dir}"
+            "${GITHUB_WORKSPACE}/artifacttransform" "${args[@]}"
+          )
+
       - name: Run reports for build scans
+        if: ${{ inputs.project == '' }}
         run: |
           mkdir -p reports
           failures=0
@@ -86,40 +123,44 @@ jobs:
           {
             echo "## ArtifactTransformReport"
             echo
-            echo "| Build scan id | HTML | CSV | Summary |"
+            echo "| Report | HTML | CSV | Summary |"
             echo "| --- | --- | --- | --- |"
           } >> "${GITHUB_STEP_SUMMARY}"
 
-          while IFS= read -r build_scan_id; do
-            safe_id="$(printf '%s' "${build_scan_id}" | tr -c 'A-Za-z0-9._-' '-')"
-            report_dir="reports/${safe_id}"
-
+          for report_dir in reports/*; do
+            [ -d "${report_dir}" ] || continue
+            report_name="${report_dir#reports/}"
             shopt -s nullglob
             html=( "${report_dir}"/*artifact-transforms-*.html )
             csv=( "${report_dir}"/*artifact-transforms-*.csv )
             txt=( "${report_dir}"/*summary-artifact-transforms-*.txt )
             shopt -u nullglob
 
-            echo "Build scan id: ${build_scan_id}"
+            echo "Report: ${report_name}"
             echo "HTML: ${html[*]:-<none>}"
             echo "CSV:  ${csv[*]:-<none>}"
             echo "TXT:  ${txt[*]:-<none>}"
 
-            if [ ${#html[@]} -eq 0 ]; then echo "::error::No HTML report was generated for ${build_scan_id}"; failures=$((failures + 1)); fi
-            if [ ${#csv[@]} -eq 0 ]; then echo "::error::No CSV report was generated for ${build_scan_id}"; failures=$((failures + 1)); fi
-            if [ ${#txt[@]} -eq 0 ]; then echo "::error::No summary text report was generated for ${build_scan_id}"; failures=$((failures + 1)); fi
+            if [ ${#html[@]} -eq 0 ]; then echo "::error::No HTML report was generated for ${report_name}"; failures=$((failures + 1)); fi
+            if [ ${#csv[@]} -eq 0 ]; then echo "::error::No CSV report was generated for ${report_name}"; failures=$((failures + 1)); fi
+            if [ ${#txt[@]} -eq 0 ]; then echo "::error::No summary text report was generated for ${report_name}"; failures=$((failures + 1)); fi
 
             if [ ${#html[@]} -gt 0 ]; then
               grep -q "Artifact Transform Report" "${html[0]}" || {
-                echo "::error::HTML report missing expected title for ${build_scan_id}"
+                echo "::error::HTML report missing expected title for ${report_name}"
                 failures=$((failures + 1))
               }
             fi
 
             {
-              echo "| \`${build_scan_id}\` | \`${html[0]:-missing}\` | \`${csv[0]:-missing}\` | \`${txt[0]:-missing}\` |"
+              echo "| \`${report_name}\` | \`${html[0]:-missing}\` | \`${csv[0]:-missing}\` | \`${txt[0]:-missing}\` |"
             } >> "${GITHUB_STEP_SUMMARY}"
-          done <<< "${BUILD_SCAN_ID_LIST}"
+          done
+
+          if ! compgen -G "reports/*" > /dev/null; then
+            echo "::error::No report directories were generated"
+            exit 1
+          fi
 
           if [ "${failures}" -gt 0 ]; then
             echo "::error::${failures} report verification check(s) failed"
