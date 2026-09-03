@@ -1,16 +1,17 @@
-package io.github.cdsap.artifacttransform.cli.output
+package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportOutputsTest {
+class ArtifactTransformReportWriterTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
 
@@ -49,7 +50,10 @@ class ArtifactTransformReportOutputsTest {
     fun `multi-build path writes text csv and html without single prefix`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportOutputs(sampleTransforms, false, timestamp).write()
+                ArtifactTransformReportWriter(sampleTransforms, false, timestamp) {
+                    println("Total Artifact transforms: ${sampleTransforms.size}")
+                    println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
+                }.write()
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -61,11 +65,17 @@ class ArtifactTransformReportOutputsTest {
         assertTrue(html.exists())
         assertTrue(csv.readText().startsWith("transformActionType,"))
         assertTrue(html.readText().contains("<html"))
+        assertTrue(stdout.contains("Total Artifact transforms: 1"))
+        assertTrue(stdout.contains("Build Scans with Artifact transforms: 1"))
         assertOutputOrder(
             stdout,
             "summary-artifact-transforms-$timestamp.txt",
             "artifact-transforms-$timestamp.csv",
             "artifact-transforms-$timestamp.html",
+        )
+        assertTrue(
+            stdout.indexOf("Total Artifact transforms: 1") <
+                stdout.indexOf("File summary-artifact-transforms-$timestamp.txt created"),
         )
     }
 
@@ -73,7 +83,9 @@ class ArtifactTransformReportOutputsTest {
     fun `single-build path writes text csv and html with single prefix`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportOutputs(sampleTransforms, true, timestamp).write()
+                ArtifactTransformReportWriter(sampleTransforms, true, timestamp) {
+                    println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
+                }.write()
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -83,12 +95,32 @@ class ArtifactTransformReportOutputsTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
+        assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertOutputOrder(
             stdout,
             "single-summary-artifact-transforms-$timestamp.txt",
             "single-artifact-transforms-$timestamp.csv",
             "single-artifact-transforms-$timestamp.html",
         )
+    }
+
+    @Test
+    fun `empty transforms skip summary and file outputs`() {
+        var summaryCalled = false
+        val stdout =
+            captureStdout {
+                ArtifactTransformReportWriter(emptyList(), false, timestamp) {
+                    summaryCalled = true
+                    println("should not print")
+                }.write()
+            }
+
+        assertFalse(summaryCalled)
+        assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
+        assertFalse(File("artifact-transforms-$timestamp.csv").exists())
+        assertFalse(File("artifact-transforms-$timestamp.html").exists())
+        assertFalse(stdout.contains("should not print"))
+        assertFalse(stdout.contains("File "))
     }
 
     private fun assertOutputOrder(
