@@ -1,4 +1,4 @@
-package io.github.cdsap.artifacttransform.cli.report
+package io.github.cdsap.artifacttransform.cli.output
 
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportWriterTest {
+class ArtifactTransformReportOutputTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
 
@@ -50,7 +50,7 @@ class ArtifactTransformReportWriterTest {
     fun `multi-build path writes text csv and html without single prefix`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportWriter(sampleTransforms, false, timestamp) {
+                ArtifactTransformReportOutput(sampleTransforms, false, timestamp) {
                     println("Total Artifact transforms: ${sampleTransforms.size}")
                     println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
                 }.write()
@@ -83,7 +83,7 @@ class ArtifactTransformReportWriterTest {
     fun `single-build path writes text csv and html with single prefix`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportWriter(sampleTransforms, true, timestamp) {
+                ArtifactTransformReportOutput(sampleTransforms, true, timestamp) {
                     println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
                 }.write()
             }
@@ -109,7 +109,7 @@ class ArtifactTransformReportWriterTest {
         var summaryCalled = false
         val stdout =
             captureStdout {
-                ArtifactTransformReportWriter(emptyList(), false, timestamp) {
+                ArtifactTransformReportOutput(emptyList(), false, timestamp) {
                     summaryCalled = true
                     println("should not print")
                 }.write()

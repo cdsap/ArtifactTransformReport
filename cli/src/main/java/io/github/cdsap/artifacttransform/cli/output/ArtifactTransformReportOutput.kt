@@ -1,11 +1,9 @@
-package io.github.cdsap.artifacttransform.cli.report
+package io.github.cdsap.artifacttransform.cli.output
 
-import io.github.cdsap.artifacttransform.cli.output.CsvOutput
-import io.github.cdsap.artifacttransform.cli.output.HtmlOutput
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-class ArtifactTransformReportWriter(
+class ArtifactTransformReportOutput(
     private val transforms: List<ArtifactTransform>,
     private val singleReport: Boolean,
     private val timestamp: Long = System.currentTimeMillis(),
