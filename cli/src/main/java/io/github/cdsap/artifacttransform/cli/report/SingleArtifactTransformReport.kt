@@ -10,7 +10,7 @@ class SingleArtifactTransformReport(
 
     suspend fun process() {
         val transforms = GetSingleArtifactTransform(repository).get(buildScanId)
-        ReportOutputWriter(transforms, true) {
+        ArtifactTransformReportWriter(transforms, true) {
             println("Build $buildScanId - Total Artifact transforms: ${transforms.size} ")
         }.write()
     }
