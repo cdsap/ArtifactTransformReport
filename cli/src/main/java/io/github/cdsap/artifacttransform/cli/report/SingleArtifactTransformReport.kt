@@ -1,7 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.artifacttransform.GetSingleArtifactTransform
-import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
 import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
 
 class SingleArtifactTransformReport(
@@ -11,8 +10,9 @@ class SingleArtifactTransformReport(
 
     suspend fun process() {
         val transforms = GetSingleArtifactTransform(repository).get(buildScanId)
-        ArtifactTransformReportOutput(transforms, true) {
+        if (transforms.isNotEmpty()) {
             println("Build $buildScanId - Total Artifact transforms: ${transforms.size} ")
-        }.write()
+            ArtifactTransformReportEmitter.emit(transforms, true)
+        }
     }
 }
