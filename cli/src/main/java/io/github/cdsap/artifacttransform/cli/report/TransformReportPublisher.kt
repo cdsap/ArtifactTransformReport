@@ -5,9 +5,9 @@ import io.github.cdsap.artifacttransform.cli.output.HtmlOutput
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-object ArtifactTransformReportEmitter {
+object TransformReportPublisher {
 
-    fun emit(
+    fun publish(
         transforms: List<ArtifactTransform>,
         singleReport: Boolean,
         timestamp: Long = System.currentTimeMillis(),

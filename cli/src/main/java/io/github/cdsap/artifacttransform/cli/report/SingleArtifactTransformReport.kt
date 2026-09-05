@@ -12,7 +12,7 @@ class SingleArtifactTransformReport(
         val transforms = GetSingleArtifactTransform(repository).get(buildScanId)
         if (transforms.isNotEmpty()) {
             println("Build $buildScanId - Total Artifact transforms: ${transforms.size} ")
-            ArtifactTransformReportEmitter.emit(transforms, true)
+            TransformReportPublisher.publish(transforms, true)
         }
     }
 }
