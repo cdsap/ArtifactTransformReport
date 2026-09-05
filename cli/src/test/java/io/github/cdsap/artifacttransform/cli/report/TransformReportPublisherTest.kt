@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportEmitterTest {
+class TransformReportPublisherTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
 
@@ -50,10 +50,10 @@ class ArtifactTransformReportEmitterTest {
     fun `multi-build path writes text csv and html without single prefix`() {
         val stdout =
             captureStdout {
-                // Mirror ArtifactTransformReport preamble + shared emit
+                // Mirror ArtifactTransformReport preamble + shared publish
                 println("Total Artifact transforms: ${sampleTransforms.size}")
                 println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                ArtifactTransformReportEmitter.emit(sampleTransforms, false, timestamp)
+                TransformReportPublisher.publish(sampleTransforms, false, timestamp)
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -83,9 +83,9 @@ class ArtifactTransformReportEmitterTest {
     fun `single-build path writes text csv and html with single prefix`() {
         val stdout =
             captureStdout {
-                // Mirror SingleArtifactTransformReport preamble + shared emit
+                // Mirror SingleArtifactTransformReport preamble + shared publish
                 println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                ArtifactTransformReportEmitter.emit(sampleTransforms, true, timestamp)
+                TransformReportPublisher.publish(sampleTransforms, true, timestamp)
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -108,7 +108,7 @@ class ArtifactTransformReportEmitterTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                ArtifactTransformReportEmitter.emit(emptyList(), false, timestamp)
+                TransformReportPublisher.publish(emptyList(), false, timestamp)
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())

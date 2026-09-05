@@ -14,7 +14,7 @@ class ArtifactTransformReport(
         if (transforms.isNotEmpty()) {
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
-            ArtifactTransformReportEmitter.emit(transforms, false)
+            TransformReportPublisher.publish(transforms, false)
         }
     }
 }
