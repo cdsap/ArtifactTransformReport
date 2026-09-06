@@ -1,13 +1,9 @@
 package io.github.cdsap.artifacttransform.cli.view
 
-import com.jakewharton.picnic.renderText
 import io.github.cdsap.geapi.client.model.ArtifactTransform
-import java.io.File
 
 class ArtifactTransformView(
     val transforms: List<ArtifactTransform>,
-    val singleReport: Boolean,
-    val timestamp: Long
 ) {
 
     fun print() {
@@ -32,32 +28,5 @@ class ArtifactTransformView(
         cacheEffectivenessView.print()
         attributeTransitionView.print()
         buildScanView.print()
-
-        val prefixFile = if (singleReport) "single-" else ""
-        val txt = "${prefixFile}summary-artifact-transforms-$timestamp.txt"
-        val startTimestamp = System.currentTimeMillis()
-        File(txt).writeText(
-            outcomeView.generateReport().renderText() +
-                "\n" +
-                avoidanceView.generateReport().renderText() +
-                "\n" +
-                transformsByType.generateReport().renderText() +
-                "\n" +
-                negativeAvoidanceView.generateReport().renderText() +
-                "\n" +
-                dependencyView.generateReport().renderText() +
-                "\n" +
-                cacheSizeView.generateReport().renderText() +
-                "\n" +
-                slowestView.generateReport().renderText() +
-                "\n" +
-                cacheEffectivenessView.generateReport().renderText() +
-                "\n" +
-                attributeTransitionView.generateReport().renderText() +
-                "\n" +
-                buildScanView.generateReport().renderText()
-        )
-        val endTime = System.currentTimeMillis()
-        println("File $txt created in ${endTime - startTimestamp} ms")
     }
 }
