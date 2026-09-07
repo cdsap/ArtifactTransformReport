@@ -1,4 +1,4 @@
-package io.github.cdsap.artifacttransform.cli.report
+package io.github.cdsap.artifacttransform.cli.output
 
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class TransformReportPublisherTest {
+class ReportOutputsTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
 
@@ -50,10 +50,16 @@ class TransformReportPublisherTest {
     fun `multi-build path writes text csv and html without single prefix`() {
         val stdout =
             captureStdout {
-                // Mirror ArtifactTransformReport preamble + shared publish
-                println("Total Artifact transforms: ${sampleTransforms.size}")
-                println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                TransformReportPublisher.publish(sampleTransforms, false, timestamp)
+                ReportOutputs.emit(
+                    transforms = sampleTransforms,
+                    singleReport = false,
+                    timestamp = timestamp,
+                    summaryLines =
+                        listOf(
+                            "Total Artifact transforms: ${sampleTransforms.size}",
+                            "Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}",
+                        ),
+                )
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -83,9 +89,15 @@ class TransformReportPublisherTest {
     fun `single-build path writes text csv and html with single prefix`() {
         val stdout =
             captureStdout {
-                // Mirror SingleArtifactTransformReport preamble + shared publish
-                println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                TransformReportPublisher.publish(sampleTransforms, true, timestamp)
+                ReportOutputs.emit(
+                    transforms = sampleTransforms,
+                    singleReport = true,
+                    timestamp = timestamp,
+                    summaryLines =
+                        listOf(
+                            "Build build1 - Total Artifact transforms: ${sampleTransforms.size} ",
+                        ),
+                )
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -108,7 +120,11 @@ class TransformReportPublisherTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                TransformReportPublisher.publish(emptyList(), false, timestamp)
+                ReportOutputs.emit(
+                    transforms = emptyList(),
+                    singleReport = false,
+                    timestamp = timestamp,
+                )
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
