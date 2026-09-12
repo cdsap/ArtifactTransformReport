@@ -2,6 +2,7 @@ package io.github.cdsap.artifacttransform.cli.view
 
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -29,6 +30,20 @@ class ArtifactTransformViewTest {
             ),
         )
 
+    private val sectionMarkers =
+        listOf(
+            "Artifacts Transforms by outcome",
+            "Artifacts Transforms by Avoidance Savings Outcome",
+            "Artifacts Transforms by Type",
+            "Negative Transforms by Type",
+            "Duration by Artifact transform dependency",
+            "Cache Size",
+            "Slowest Artifact Transforms",
+            "Cache Effectiveness",
+            "Artifact transforms by changed attributes",
+            "Artifact transforms by Build Scan",
+        )
+
     @Test
     fun `prints console sections without writing summary file`() {
         val stdout =
@@ -42,6 +57,24 @@ class ArtifactTransformViewTest {
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
         assertFalse(File("single-summary-artifact-transforms-$timestamp.txt").exists())
     }
+
+    @Test
+    fun `console and summary text share the same section order`() {
+        val view = ArtifactTransformView(sampleTransforms)
+        val console =
+            captureStdout {
+                view.print()
+            }
+        val summary = view.renderSummaryText()
+
+        assertEquals(appearingSectionOrder(console), appearingSectionOrder(summary))
+        assertTrue(appearingSectionOrder(summary).size >= 9)
+    }
+
+    private fun appearingSectionOrder(text: String): List<String> =
+        sectionMarkers
+            .filter { text.contains(it) }
+            .sortedBy { text.indexOf(it) }
 
     private fun captureStdout(block: () -> Unit): String {
         val original = System.out
