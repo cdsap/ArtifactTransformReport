@@ -51,8 +51,18 @@ class SummaryTextOutputTest {
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
         assertTrue(txt.exists())
         assertTrue(stdout.contains("File summary-artifact-transforms-$timestamp.txt created"))
-        assertTrue(txt.readText().contains("Artifacts Transforms by outcome"))
-        assertTrue(txt.readText().contains("Artifacts Transforms by Avoidance Savings Outcome"))
+        val contents = txt.readText()
+        assertTrue(contents.contains("Artifacts Transforms by outcome"))
+        assertTrue(contents.contains("Artifacts Transforms by Avoidance Savings Outcome"))
+        assertTrue(contents.contains("Artifact transforms by Build Scan"))
+        assertTrue(
+            contents.indexOf("Artifacts Transforms by outcome") <
+                contents.indexOf("Artifacts Transforms by Avoidance Savings Outcome"),
+        )
+        assertTrue(
+            contents.indexOf("Artifacts Transforms by Avoidance Savings Outcome") <
+                contents.indexOf("Artifact transforms by Build Scan"),
+        )
     }
 
     @Test
