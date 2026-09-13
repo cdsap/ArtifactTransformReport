@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
+import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import org.junit.jupiter.api.AfterEach
@@ -63,6 +64,7 @@ class ArtifactTransformReportPublisherTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
+        assertEquals(ArtifactTransformView(sampleTransforms).renderSummaryText(), txt.readText())
         assertTrue(csv.readText().startsWith("transformActionType,"))
         assertTrue(html.readText().contains("<html"))
         assertTrue(stdout.contains("Total Artifact transforms: 1"))
@@ -95,6 +97,7 @@ class ArtifactTransformReportPublisherTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
+        assertEquals(ArtifactTransformView(sampleTransforms).renderSummaryText(), txt.readText())
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertOutputOrder(
             stdout,
