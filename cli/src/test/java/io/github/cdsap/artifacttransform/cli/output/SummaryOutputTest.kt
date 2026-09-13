@@ -1,8 +1,7 @@
 package io.github.cdsap.artifacttransform.cli.output
 
-import io.github.cdsap.geapi.client.model.ArtifactTransform
-import io.github.cdsap.geapi.client.model.ChangedAttributes
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -10,26 +9,15 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class SummaryTextOutputTest {
+class SummaryOutputTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
-
-    private val sampleTransforms =
-        listOf(
-            ArtifactTransform(
-                "Execution1",
-                "TransformType1",
-                "Artifact1",
-                "success",
-                "executed_cacheable",
-                "200",
-                "100",
-                "50",
-                "300",
-                arrayOf(ChangedAttributes("artifactType", "jar", "classpath-entry-snapshot")),
-                "build1",
-            ),
-        )
+    private val sampleSummary =
+        """
+        Artifacts Transforms by outcome
+        Artifacts Transforms by Avoidance Savings Outcome
+        Artifact transforms by Build Scan
+        """.trimIndent()
 
     @AfterEach
     fun cleanup() {
@@ -45,35 +33,26 @@ class SummaryTextOutputTest {
     fun `writes summary text file without single prefix`() {
         val stdout =
             captureStdout {
-                SummaryTextOutput(sampleTransforms, false, timestamp).writeSummaryText()
+                SummaryOutput(sampleSummary, false, timestamp).writeSummary()
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
         assertTrue(txt.exists())
+        assertEquals(sampleSummary, txt.readText())
         assertTrue(stdout.contains("File summary-artifact-transforms-$timestamp.txt created"))
-        val contents = txt.readText()
-        assertTrue(contents.contains("Artifacts Transforms by outcome"))
-        assertTrue(contents.contains("Artifacts Transforms by Avoidance Savings Outcome"))
-        assertTrue(contents.contains("Artifact transforms by Build Scan"))
-        assertTrue(
-            contents.indexOf("Artifacts Transforms by outcome") <
-                contents.indexOf("Artifacts Transforms by Avoidance Savings Outcome"),
-        )
-        assertTrue(
-            contents.indexOf("Artifacts Transforms by Avoidance Savings Outcome") <
-                contents.indexOf("Artifact transforms by Build Scan"),
-        )
+        assertTrue(stdout.contains(" ms"))
     }
 
     @Test
     fun `writes summary text file with single prefix`() {
         val stdout =
             captureStdout {
-                SummaryTextOutput(sampleTransforms, true, timestamp).writeSummaryText()
+                SummaryOutput(sampleSummary, true, timestamp).writeSummary()
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
         assertTrue(txt.exists())
+        assertEquals(sampleSummary, txt.readText())
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
         assertTrue(stdout.contains("File single-summary-artifact-transforms-$timestamp.txt created"))
     }
