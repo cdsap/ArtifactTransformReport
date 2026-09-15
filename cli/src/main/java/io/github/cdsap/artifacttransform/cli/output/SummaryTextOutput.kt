@@ -2,7 +2,7 @@ package io.github.cdsap.artifacttransform.cli.output
 
 import java.io.File
 
-class SummaryOutput(
+class SummaryTextOutput(
     private val summaryText: String,
     private val single: Boolean,
     private val timestamp: Long,
