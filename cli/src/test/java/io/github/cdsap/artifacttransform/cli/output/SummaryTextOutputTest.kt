@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class SummaryOutputTest {
+class SummaryTextOutputTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
     private val sampleSummary =
@@ -33,7 +33,7 @@ class SummaryOutputTest {
     fun `writes summary text file without single prefix`() {
         val stdout =
             captureStdout {
-                SummaryOutput(sampleSummary, false, timestamp).writeSummary()
+                SummaryTextOutput(sampleSummary, false, timestamp).writeSummary()
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -47,7 +47,7 @@ class SummaryOutputTest {
     fun `writes summary text file with single prefix`() {
         val stdout =
             captureStdout {
-                SummaryOutput(sampleSummary, true, timestamp).writeSummary()
+                SummaryTextOutput(sampleSummary, true, timestamp).writeSummary()
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
