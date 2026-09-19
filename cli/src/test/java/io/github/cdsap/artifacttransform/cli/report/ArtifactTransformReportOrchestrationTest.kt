@@ -1,6 +1,5 @@
 package io.github.cdsap.artifacttransform.cli.report
 
-import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import io.github.cdsap.geapi.client.model.Filter
