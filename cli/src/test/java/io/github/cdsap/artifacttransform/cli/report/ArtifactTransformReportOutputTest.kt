@@ -1,4 +1,4 @@
-package io.github.cdsap.artifacttransform.cli.output
+package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
@@ -117,6 +117,18 @@ class ArtifactTransformReportOutputTest {
         assertFalse(File("artifact-transforms-$timestamp.csv").exists())
         assertFalse(File("artifact-transforms-$timestamp.html").exists())
         assertFalse(stdout.contains("File "))
+    }
+
+    @Test
+    fun `shared timestamp is used for text csv and html filenames`() {
+        captureStdout {
+            reportOutput.publish(sampleTransforms, false, timestamp)
+        }
+
+        assertTrue(File("summary-artifact-transforms-$timestamp.txt").exists())
+        assertTrue(File("artifact-transforms-$timestamp.csv").exists())
+        assertTrue(File("artifact-transforms-$timestamp.html").exists())
+        assertFalse(File("single-summary-artifact-transforms-$timestamp.txt").exists())
     }
 
     private fun assertOutputOrder(
