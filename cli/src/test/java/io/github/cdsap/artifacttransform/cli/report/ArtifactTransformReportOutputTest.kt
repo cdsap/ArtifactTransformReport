@@ -64,11 +64,13 @@ class ArtifactTransformReportOutputTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
-        assertEquals(ArtifactTransformView(sampleTransforms).renderSummaryText(), txt.readText())
+        val expectedSummary = ArtifactTransformView(sampleTransforms).render().asText()
+        assertEquals(expectedSummary, txt.readText())
         assertTrue(csv.readText().startsWith("transformActionType,"))
         assertTrue(html.readText().contains("<html"))
         assertTrue(stdout.contains("Total Artifact transforms: 1"))
         assertTrue(stdout.contains("Build Scans with Artifact transforms: 1"))
+        assertTrue(stdout.contains("Artifacts Transforms by outcome"))
         assertOutputOrder(
             stdout,
             "summary-artifact-transforms-$timestamp.txt",
@@ -96,8 +98,9 @@ class ArtifactTransformReportOutputTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
-        assertEquals(ArtifactTransformView(sampleTransforms).renderSummaryText(), txt.readText())
+        assertEquals(ArtifactTransformView(sampleTransforms).render().asText(), txt.readText())
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
+        assertTrue(stdout.contains("Artifacts Transforms by outcome"))
         assertOutputOrder(
             stdout,
             "single-summary-artifact-transforms-$timestamp.txt",
