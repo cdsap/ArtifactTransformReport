@@ -8,14 +8,16 @@ class ArtifactTransformView(
     val transforms: List<ArtifactTransform>,
 ) {
 
+    fun render(): RenderedArtifactTransformReport =
+        RenderedArtifactTransformReport(orderedSectionTables().map { it.renderText() })
+
     fun print() {
-        orderedSections().forEach { it.print() }
+        render().print()
     }
 
-    fun renderSummaryText(): String =
-        orderedSections().joinToString("\n") { it.generateReport().renderText() }
+    fun renderSummaryText(): String = render().asText()
 
-    private fun orderedSections(): List<ReportSection> {
+    private fun orderedSectionTables(): List<Table> {
         val outcomeView = OutcomeView(transforms)
         val avoidanceView = AvoidanceSavingsOutcomeView(transforms)
         val transformsByType = TransformsByType(transforms)
@@ -28,25 +30,26 @@ class ArtifactTransformView(
         val buildScanView = BuildScanView(transforms)
 
         return listOf(
-            ReportSection(outcomeView::print, outcomeView::generateReport),
-            ReportSection(avoidanceView::print, avoidanceView::generateReport),
-            ReportSection(transformsByType::print, transformsByType::generateReport),
-            ReportSection(negativeAvoidanceView::print, negativeAvoidanceView::generateReport),
-            ReportSection(dependencyView::print, dependencyView::generateReport),
-            ReportSection(cacheSizeView::print, cacheSizeView::generateReport),
-            ReportSection(slowestView::print, slowestView::generateReport),
-            ReportSection(cacheEffectivenessView::print, cacheEffectivenessView::generateReport),
-            ReportSection(attributeTransitionView::print, attributeTransitionView::generateReport),
-            ReportSection(buildScanView::print, buildScanView::generateReport),
+            outcomeView.generateReport(),
+            avoidanceView.generateReport(),
+            transformsByType.generateReport(),
+            negativeAvoidanceView.generateReport(),
+            dependencyView.generateReport(),
+            cacheSizeView.generateReport(),
+            slowestView.generateReport(),
+            cacheEffectivenessView.generateReport(),
+            attributeTransitionView.generateReport(),
+            buildScanView.generateReport(),
         )
     }
+}
 
-    private class ReportSection(
-        private val printSection: () -> Unit,
-        private val reportSection: () -> Table,
-    ) {
-        fun print() = printSection()
-
-        fun generateReport() = reportSection()
+class RenderedArtifactTransformReport(
+    private val sections: List<String>,
+) {
+    fun print() {
+        sections.filter { it.isNotBlank() }.forEach { println(it) }
     }
+
+    fun asText(): String = sections.joinToString("\n")
 }

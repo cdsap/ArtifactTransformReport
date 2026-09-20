@@ -71,6 +71,24 @@ class ArtifactTransformViewTest {
         assertTrue(appearingSectionOrder(summary).size >= 9)
     }
 
+    @Test
+    fun `render reuses the same section text for console and summary`() {
+        val rendered = ArtifactTransformView(sampleTransforms).render()
+        val console =
+            captureStdout {
+                rendered.print()
+            }
+        val summary = rendered.asText()
+
+        assertEquals(appearingSectionOrder(console), appearingSectionOrder(summary))
+        assertTrue(appearingSectionOrder(summary).size >= 9)
+        appearingSectionOrder(console).forEach { marker ->
+            assertTrue(summary.contains(marker))
+            assertTrue(console.contains(marker))
+        }
+        assertEquals(summary, ArtifactTransformView(sampleTransforms).renderSummaryText())
+    }
+
     private fun appearingSectionOrder(text: String): List<String> =
         sectionMarkers
             .filter { text.contains(it) }
