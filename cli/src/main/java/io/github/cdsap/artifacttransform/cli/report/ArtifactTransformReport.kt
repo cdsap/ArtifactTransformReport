@@ -8,7 +8,7 @@ import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
 class ArtifactTransformReport(
     private val filter: Filter,
     private val repository: GradleEnterpriseRepository,
-    private val reportOutput: ArtifactTransformReportOutput = ArtifactTransformReportOutput(),
+    private val reportWriter: ArtifactTransformReportWriter = ArtifactTransformReportWriter(),
 ) {
     suspend fun process() {
         publishIfPresent(GetArtifactTransforms(filter, repository).get())
@@ -18,7 +18,7 @@ class ArtifactTransformReport(
         if (transforms.isNotEmpty()) {
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
-            reportOutput.publish(transforms, false)
+            reportWriter.write(transforms, false)
         }
     }
 }

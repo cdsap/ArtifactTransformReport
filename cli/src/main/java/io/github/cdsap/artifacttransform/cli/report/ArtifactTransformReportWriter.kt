@@ -6,8 +6,8 @@ import io.github.cdsap.artifacttransform.cli.output.SummaryTextOutput
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-open class ArtifactTransformReportOutput {
-    open fun publish(
+open class ArtifactTransformReportWriter {
+    open fun write(
         transforms: List<ArtifactTransform>,
         singleReport: Boolean,
         timestamp: Long = System.currentTimeMillis(),

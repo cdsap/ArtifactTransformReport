@@ -7,7 +7,7 @@ import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
 class SingleArtifactTransformReport(
     private val buildScanId: String,
     private val repository: GradleEnterpriseRepository,
-    private val reportOutput: ArtifactTransformReportOutput = ArtifactTransformReportOutput(),
+    private val reportWriter: ArtifactTransformReportWriter = ArtifactTransformReportWriter(),
 ) {
     suspend fun process() {
         publishIfPresent(GetSingleArtifactTransform(repository).get(buildScanId))
@@ -16,7 +16,7 @@ class SingleArtifactTransformReport(
     internal fun publishIfPresent(transforms: List<ArtifactTransform>) {
         if (transforms.isNotEmpty()) {
             println("Build $buildScanId - Total Artifact transforms: ${transforms.size} ")
-            reportOutput.publish(transforms, true)
+            reportWriter.write(transforms, true)
         }
     }
 }
