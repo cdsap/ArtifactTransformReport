@@ -12,7 +12,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportOrchestrationTest {
+class ArtifactTransformReportTest {
     private val timestamp = 1_700_000_000_099L
 
     private val sampleTransforms =
@@ -33,8 +33,8 @@ class ArtifactTransformReportOrchestrationTest {
         )
 
     @Test
-    fun `aggregate report delegates to replaced collaborator without writing files`() {
-        val recording = RecordingReportOutput()
+    fun `aggregate report delegates to writer without writing files`() {
+        val recording = RecordingReportWriter()
         val report = ArtifactTransformReport(Filter(), UnusedRepository, recording)
 
         val stdout =
@@ -42,15 +42,15 @@ class ArtifactTransformReportOrchestrationTest {
                 report.publishIfPresent(sampleTransforms)
             }
 
-        assertEquals(listOf(PublishCall(sampleTransforms, false)), recording.calls)
+        assertEquals(listOf(WriteCall(sampleTransforms, false)), recording.calls)
         assertTrue(stdout.contains("Total Artifact transforms: 1"))
         assertTrue(stdout.contains("Build Scans with Artifact transforms: 1"))
         assertNoOutputFiles()
     }
 
     @Test
-    fun `single report delegates to replaced collaborator without writing files`() {
-        val recording = RecordingReportOutput()
+    fun `single report delegates to writer without writing files`() {
+        val recording = RecordingReportWriter()
         val report = SingleArtifactTransformReport("build1", UnusedRepository, recording)
 
         val stdout =
@@ -58,14 +58,14 @@ class ArtifactTransformReportOrchestrationTest {
                 report.publishIfPresent(sampleTransforms)
             }
 
-        assertEquals(listOf(PublishCall(sampleTransforms, true)), recording.calls)
+        assertEquals(listOf(WriteCall(sampleTransforms, true)), recording.calls)
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertNoOutputFiles()
     }
 
     @Test
-    fun `empty results skip collaborator and write no files`() {
-        val recording = RecordingReportOutput()
+    fun `empty results skip writer and write no files`() {
+        val recording = RecordingReportWriter()
         ArtifactTransformReport(Filter(), UnusedRepository, recording).publishIfPresent(emptyList())
         SingleArtifactTransformReport("build1", UnusedRepository, recording).publishIfPresent(emptyList())
 
@@ -98,20 +98,20 @@ class ArtifactTransformReportOrchestrationTest {
         return buffer.toString()
     }
 
-    private data class PublishCall(
+    private data class WriteCall(
         val transforms: List<ArtifactTransform>,
         val singleReport: Boolean,
     )
 
-    private class RecordingReportOutput : ArtifactTransformReportOutput() {
-        val calls = mutableListOf<PublishCall>()
+    private class RecordingReportWriter : ArtifactTransformReportWriter() {
+        val calls = mutableListOf<WriteCall>()
 
-        override fun publish(
+        override fun write(
             transforms: List<ArtifactTransform>,
             singleReport: Boolean,
             timestamp: Long,
         ) {
-            calls += PublishCall(transforms, singleReport)
+            calls += WriteCall(transforms, singleReport)
         }
     }
 

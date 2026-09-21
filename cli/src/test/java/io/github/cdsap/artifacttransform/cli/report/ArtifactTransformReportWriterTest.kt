@@ -12,10 +12,10 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportOutputTest {
+class ArtifactTransformReportWriterTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
-    private val reportOutput = ArtifactTransformReportOutput()
+    private val reportWriter = ArtifactTransformReportWriter()
 
     private val sampleTransforms =
         listOf(
@@ -54,7 +54,7 @@ class ArtifactTransformReportOutputTest {
             captureStdout {
                 println("Total Artifact transforms: ${sampleTransforms.size}")
                 println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                reportOutput.publish(sampleTransforms, false, timestamp)
+                reportWriter.write(sampleTransforms, false, timestamp)
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -88,7 +88,7 @@ class ArtifactTransformReportOutputTest {
         val stdout =
             captureStdout {
                 println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                reportOutput.publish(sampleTransforms, true, timestamp)
+                reportWriter.write(sampleTransforms, true, timestamp)
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -113,7 +113,7 @@ class ArtifactTransformReportOutputTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                reportOutput.publish(emptyList(), false, timestamp)
+                reportWriter.write(emptyList(), false, timestamp)
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
@@ -125,7 +125,7 @@ class ArtifactTransformReportOutputTest {
     @Test
     fun `shared timestamp is used for text csv and html filenames`() {
         captureStdout {
-            reportOutput.publish(sampleTransforms, false, timestamp)
+            reportWriter.write(sampleTransforms, false, timestamp)
         }
 
         assertTrue(File("summary-artifact-transforms-$timestamp.txt").exists())
