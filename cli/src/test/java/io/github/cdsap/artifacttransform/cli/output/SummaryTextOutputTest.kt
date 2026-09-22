@@ -30,10 +30,10 @@ class SummaryTextOutputTest {
     }
 
     @Test
-    fun `writes summary text file without single prefix`() {
+    fun `writes summary text file for aggregate scope`() {
         val stdout =
             captureStdout {
-                SummaryTextOutput(sampleSummary, false, timestamp).writeSummary()
+                SummaryTextOutput(sampleSummary, ReportScope.Aggregate, timestamp).writeSummary()
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -44,10 +44,10 @@ class SummaryTextOutputTest {
     }
 
     @Test
-    fun `writes summary text file with single prefix`() {
+    fun `writes summary text file for single-build scope`() {
         val stdout =
             captureStdout {
-                SummaryTextOutput(sampleSummary, true, timestamp).writeSummary()
+                SummaryTextOutput(sampleSummary, ReportScope.SingleBuild, timestamp).writeSummary()
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }

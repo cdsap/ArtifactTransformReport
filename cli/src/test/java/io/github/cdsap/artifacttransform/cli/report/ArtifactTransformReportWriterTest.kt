@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
+import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -49,12 +50,12 @@ class ArtifactTransformReportWriterTest {
     }
 
     @Test
-    fun `multi-build path writes text csv and html without single prefix`() {
+    fun `aggregate scope writes text csv and html without single prefix`() {
         val stdout =
             captureStdout {
                 println("Total Artifact transforms: ${sampleTransforms.size}")
                 println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                reportWriter.write(sampleTransforms, false, timestamp)
+                reportWriter.write(sampleTransforms, ReportScope.Aggregate, timestamp)
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -68,6 +69,7 @@ class ArtifactTransformReportWriterTest {
         assertEquals(expectedSummary, txt.readText())
         assertTrue(csv.readText().startsWith("transformActionType,"))
         assertTrue(html.readText().contains("<html"))
+        assertTrue(html.readText().contains("Aggregated builds"))
         assertTrue(stdout.contains("Total Artifact transforms: 1"))
         assertTrue(stdout.contains("Build Scans with Artifact transforms: 1"))
         assertTrue(stdout.contains("Artifacts Transforms by outcome"))
@@ -84,11 +86,11 @@ class ArtifactTransformReportWriterTest {
     }
 
     @Test
-    fun `single-build path writes text csv and html with single prefix`() {
+    fun `single-build scope writes text csv and html with single prefix`() {
         val stdout =
             captureStdout {
                 println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                reportWriter.write(sampleTransforms, true, timestamp)
+                reportWriter.write(sampleTransforms, ReportScope.SingleBuild, timestamp)
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -99,6 +101,7 @@ class ArtifactTransformReportWriterTest {
         assertTrue(csv.exists())
         assertTrue(html.exists())
         assertEquals(ArtifactTransformView(sampleTransforms).render().asText(), txt.readText())
+        assertTrue(html.readText().contains("Single build scan"))
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertTrue(stdout.contains("Artifacts Transforms by outcome"))
         assertOutputOrder(
@@ -113,7 +116,7 @@ class ArtifactTransformReportWriterTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                reportWriter.write(emptyList(), false, timestamp)
+                reportWriter.write(emptyList(), ReportScope.Aggregate, timestamp)
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
@@ -125,7 +128,7 @@ class ArtifactTransformReportWriterTest {
     @Test
     fun `shared timestamp is used for text csv and html filenames`() {
         captureStdout {
-            reportWriter.write(sampleTransforms, false, timestamp)
+            reportWriter.write(sampleTransforms, ReportScope.Aggregate, timestamp)
         }
 
         assertTrue(File("summary-artifact-transforms-$timestamp.txt").exists())

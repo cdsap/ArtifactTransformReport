@@ -6,13 +6,12 @@ import java.io.File
 
 class CsvOutput(
     private val transforms: List<ArtifactTransform>,
-    private val single: Boolean,
+    private val reportScope: ReportScope,
     private val timestamp: Long
 ) {
 
     fun writeCsv() {
-        val prefixFile = if (single) "single-" else ""
-        val csv = "${prefixFile}artifact-transforms-$timestamp.csv"
+        val csv = "${reportScope.fileNamePrefix}artifact-transforms-$timestamp.csv"
         val headers =
             "transformActionType,duration,avoidanceOutcome,buildScan,artifactTransformExecutionName,avoidanceSavings,fingerprintingDuration,changedAttributes.from,changedAttributes.to,cacheSize\n"
         val startTimestamp = System.currentTimeMillis()

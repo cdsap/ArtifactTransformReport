@@ -4,13 +4,12 @@ import java.io.File
 
 class SummaryTextOutput(
     private val summaryText: String,
-    private val single: Boolean,
+    private val reportScope: ReportScope,
     private val timestamp: Long,
 ) {
 
     fun writeSummary() {
-        val prefixFile = if (single) "single-" else ""
-        val txt = "${prefixFile}summary-artifact-transforms-$timestamp.txt"
+        val txt = "${reportScope.fileNamePrefix}summary-artifact-transforms-$timestamp.txt"
         val startTimestamp = System.currentTimeMillis()
         File(txt).writeText(summaryText)
         val endTime = System.currentTimeMillis()

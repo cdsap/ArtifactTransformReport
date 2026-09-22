@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
+import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import io.github.cdsap.geapi.client.model.Filter
@@ -33,7 +34,7 @@ class ArtifactTransformReportTest {
         )
 
     @Test
-    fun `aggregate report delegates to writer without writing files`() {
+    fun `aggregate report delegates to writer with Aggregate scope`() {
         val recording = RecordingReportWriter()
         val report = ArtifactTransformReport(Filter(), UnusedRepository, recording)
 
@@ -42,14 +43,14 @@ class ArtifactTransformReportTest {
                 report.publishIfPresent(sampleTransforms)
             }
 
-        assertEquals(listOf(WriteCall(sampleTransforms, false)), recording.calls)
+        assertEquals(listOf(WriteCall(sampleTransforms, ReportScope.Aggregate)), recording.calls)
         assertTrue(stdout.contains("Total Artifact transforms: 1"))
         assertTrue(stdout.contains("Build Scans with Artifact transforms: 1"))
         assertNoOutputFiles()
     }
 
     @Test
-    fun `single report delegates to writer without writing files`() {
+    fun `single report delegates to writer with SingleBuild scope`() {
         val recording = RecordingReportWriter()
         val report = SingleArtifactTransformReport("build1", UnusedRepository, recording)
 
@@ -58,7 +59,7 @@ class ArtifactTransformReportTest {
                 report.publishIfPresent(sampleTransforms)
             }
 
-        assertEquals(listOf(WriteCall(sampleTransforms, true)), recording.calls)
+        assertEquals(listOf(WriteCall(sampleTransforms, ReportScope.SingleBuild)), recording.calls)
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertNoOutputFiles()
     }
@@ -100,7 +101,7 @@ class ArtifactTransformReportTest {
 
     private data class WriteCall(
         val transforms: List<ArtifactTransform>,
-        val singleReport: Boolean,
+        val reportScope: ReportScope,
     )
 
     private class RecordingReportWriter : ArtifactTransformReportWriter() {
@@ -108,10 +109,10 @@ class ArtifactTransformReportTest {
 
         override fun write(
             transforms: List<ArtifactTransform>,
-            singleReport: Boolean,
+            reportScope: ReportScope,
             timestamp: Long,
         ) {
-            calls += WriteCall(transforms, singleReport)
+            calls += WriteCall(transforms, reportScope)
         }
     }
 
