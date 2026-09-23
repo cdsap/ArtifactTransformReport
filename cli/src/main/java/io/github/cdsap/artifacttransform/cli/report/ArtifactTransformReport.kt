@@ -1,6 +1,7 @@
 package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.artifacttransform.GetArtifactTransforms
+import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
 import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.Filter
@@ -9,7 +10,7 @@ import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
 class ArtifactTransformReport(
     private val filter: Filter,
     private val repository: GradleEnterpriseRepository,
-    private val reportWriter: ArtifactTransformReportWriter = ArtifactTransformReportWriter(),
+    private val reportOutput: ArtifactTransformReportOutput = ArtifactTransformReportOutput(),
 ) {
     suspend fun process() {
         publishIfPresent(GetArtifactTransforms(filter, repository).get())
@@ -19,7 +20,7 @@ class ArtifactTransformReport(
         if (transforms.isNotEmpty()) {
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
-            reportWriter.write(transforms, ReportScope.Aggregate)
+            reportOutput.write(transforms, ReportScope.Aggregate)
         }
     }
 }
