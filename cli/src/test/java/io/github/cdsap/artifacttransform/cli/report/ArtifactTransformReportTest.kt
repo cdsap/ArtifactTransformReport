@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
+import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
 import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -34,8 +35,8 @@ class ArtifactTransformReportTest {
         )
 
     @Test
-    fun `aggregate report delegates to writer with Aggregate scope`() {
-        val recording = RecordingReportWriter()
+    fun `aggregate report delegates to output with Aggregate scope`() {
+        val recording = RecordingReportOutput()
         val report = ArtifactTransformReport(Filter(), UnusedRepository, recording)
 
         val stdout =
@@ -50,8 +51,8 @@ class ArtifactTransformReportTest {
     }
 
     @Test
-    fun `single report delegates to writer with SingleBuild scope`() {
-        val recording = RecordingReportWriter()
+    fun `single report delegates to output with SingleBuild scope`() {
+        val recording = RecordingReportOutput()
         val report = SingleArtifactTransformReport("build1", UnusedRepository, recording)
 
         val stdout =
@@ -65,8 +66,8 @@ class ArtifactTransformReportTest {
     }
 
     @Test
-    fun `empty results skip writer and write no files`() {
-        val recording = RecordingReportWriter()
+    fun `empty results skip output and write no files`() {
+        val recording = RecordingReportOutput()
         ArtifactTransformReport(Filter(), UnusedRepository, recording).publishIfPresent(emptyList())
         SingleArtifactTransformReport("build1", UnusedRepository, recording).publishIfPresent(emptyList())
 
@@ -104,7 +105,7 @@ class ArtifactTransformReportTest {
         val reportScope: ReportScope,
     )
 
-    private class RecordingReportWriter : ArtifactTransformReportWriter() {
+    private class RecordingReportOutput : ArtifactTransformReportOutput() {
         val calls = mutableListOf<WriteCall>()
 
         override fun write(

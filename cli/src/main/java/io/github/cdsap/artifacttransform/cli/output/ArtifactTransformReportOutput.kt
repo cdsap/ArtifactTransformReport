@@ -1,13 +1,9 @@
-package io.github.cdsap.artifacttransform.cli.report
+package io.github.cdsap.artifacttransform.cli.output
 
-import io.github.cdsap.artifacttransform.cli.output.CsvOutput
-import io.github.cdsap.artifacttransform.cli.output.HtmlOutput
-import io.github.cdsap.artifacttransform.cli.output.ReportScope
-import io.github.cdsap.artifacttransform.cli.output.SummaryTextOutput
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-open class ArtifactTransformReportWriter {
+open class ArtifactTransformReportOutput {
     open fun write(
         transforms: List<ArtifactTransform>,
         reportScope: ReportScope,

@@ -1,6 +1,5 @@
-package io.github.cdsap.artifacttransform.cli.report
+package io.github.cdsap.artifacttransform.cli.output
 
-import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -13,10 +12,10 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportWriterTest {
+class ArtifactTransformReportOutputTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
-    private val reportWriter = ArtifactTransformReportWriter()
+    private val reportOutput = ArtifactTransformReportOutput()
 
     private val sampleTransforms =
         listOf(
@@ -55,7 +54,7 @@ class ArtifactTransformReportWriterTest {
             captureStdout {
                 println("Total Artifact transforms: ${sampleTransforms.size}")
                 println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                reportWriter.write(sampleTransforms, ReportScope.Aggregate, timestamp)
+                reportOutput.write(sampleTransforms, ReportScope.Aggregate, timestamp)
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -90,7 +89,7 @@ class ArtifactTransformReportWriterTest {
         val stdout =
             captureStdout {
                 println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                reportWriter.write(sampleTransforms, ReportScope.SingleBuild, timestamp)
+                reportOutput.write(sampleTransforms, ReportScope.SingleBuild, timestamp)
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -116,7 +115,7 @@ class ArtifactTransformReportWriterTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                reportWriter.write(emptyList(), ReportScope.Aggregate, timestamp)
+                reportOutput.write(emptyList(), ReportScope.Aggregate, timestamp)
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
@@ -128,7 +127,7 @@ class ArtifactTransformReportWriterTest {
     @Test
     fun `shared timestamp is used for text csv and html filenames`() {
         captureStdout {
-            reportWriter.write(sampleTransforms, ReportScope.Aggregate, timestamp)
+            reportOutput.write(sampleTransforms, ReportScope.Aggregate, timestamp)
         }
 
         assertTrue(File("summary-artifact-transforms-$timestamp.txt").exists())
