@@ -17,10 +17,9 @@ class ArtifactTransformReport(
     }
 
     internal fun publishIfPresent(transforms: List<ArtifactTransform>) {
-        if (transforms.isNotEmpty()) {
+        reportOutput.writeIfPresent(transforms, ReportScope.Aggregate, onPresent = {
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
-            reportOutput.write(transforms, ReportScope.Aggregate)
-        }
+        })
     }
 }

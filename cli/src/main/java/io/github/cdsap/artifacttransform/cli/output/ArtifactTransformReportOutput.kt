@@ -4,6 +4,19 @@ import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
 open class ArtifactTransformReportOutput {
+    open fun writeIfPresent(
+        transforms: List<ArtifactTransform>,
+        reportScope: ReportScope,
+        onPresent: () -> Unit,
+        timestamp: Long = System.currentTimeMillis(),
+    ) {
+        if (transforms.isEmpty()) {
+            return
+        }
+        onPresent()
+        write(transforms, reportScope, timestamp)
+    }
+
     open fun write(
         transforms: List<ArtifactTransform>,
         reportScope: ReportScope,

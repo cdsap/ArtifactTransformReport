@@ -16,9 +16,8 @@ class SingleArtifactTransformReport(
     }
 
     internal fun publishIfPresent(transforms: List<ArtifactTransform>) {
-        if (transforms.isNotEmpty()) {
+        reportOutput.writeIfPresent(transforms, ReportScope.SingleBuild, onPresent = {
             println("Build $buildScanId - Total Artifact transforms: ${transforms.size} ")
-            reportOutput.write(transforms, ReportScope.SingleBuild)
-        }
+        })
     }
 }

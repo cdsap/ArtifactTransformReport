@@ -125,6 +125,32 @@ class ArtifactTransformReportOutputTest {
     }
 
     @Test
+    fun `write if present logs before publishing and skips callback for empty transforms`() {
+        val stdout =
+            captureStdout {
+                reportOutput.writeIfPresent(
+                    sampleTransforms,
+                    ReportScope.Aggregate,
+                    onPresent = { println("mode log") },
+                    timestamp = timestamp,
+                )
+            }
+
+        assertTrue(stdout.indexOf("mode log") < stdout.indexOf("File summary-artifact-transforms-$timestamp.txt created"))
+
+        val emptyStdout =
+            captureStdout {
+                reportOutput.writeIfPresent(
+                    emptyList(),
+                    ReportScope.Aggregate,
+                    onPresent = { println("unexpected mode log") },
+                    timestamp = timestamp,
+                )
+            }
+        assertFalse(emptyStdout.contains("unexpected mode log"))
+    }
+
+    @Test
     fun `shared timestamp is used for text csv and html filenames`() {
         captureStdout {
             reportOutput.write(sampleTransforms, ReportScope.Aggregate, timestamp)
