@@ -12,16 +12,10 @@ class CsvOutput(
 
     fun writeCsv() {
         val csv = "${reportScope.fileNamePrefix}artifact-transforms-$timestamp.csv"
-        val headers =
-            "transformActionType,duration,avoidanceOutcome,buildScan,artifactTransformExecutionName,avoidanceSavings,fingerprintingDuration,changedAttributes.from,changedAttributes.to,cacheSize\n"
+        val content = CsvFormatter().format(transforms)
         val startTimestamp = System.currentTimeMillis()
         File(csv).bufferedWriter().use { out: BufferedWriter ->
-            out.write(headers)
-            transforms.forEach { transform ->
-                val line =
-                    "${transform.transformActionType},${transform.duration},${transform.avoidanceOutcome},${transform.buildScanId},${transform.artifactTransformExecutionName},${transform.avoidanceSavings},${transform.fingerprintingDuration},${transform.changedAttributes[0].from},${transform.changedAttributes[0].to},${transform.cacheArtifactSize}\n"
-                out.write(line)
-            }
+            out.write(content)
         }
         val endTime = System.currentTimeMillis()
         println("File $csv created in ${endTime - startTimestamp} ms")
