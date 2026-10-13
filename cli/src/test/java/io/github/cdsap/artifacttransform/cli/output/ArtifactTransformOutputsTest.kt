@@ -12,10 +12,11 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportOutputTest {
+class ArtifactTransformOutputsTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
-    private val reportOutput = ArtifactTransformReportOutput()
+    private val aggregateOutputs = ArtifactTransformOutputs(singleBuild = false)
+    private val singleBuildOutputs = ArtifactTransformOutputs(singleBuild = true)
 
     private val sampleTransforms =
         listOf(
@@ -54,7 +55,7 @@ class ArtifactTransformReportOutputTest {
             captureStdout {
                 println("Total Artifact transforms: ${sampleTransforms.size}")
                 println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                reportOutput.write(sampleTransforms, ReportScope.Aggregate, timestamp)
+                aggregateOutputs.write(sampleTransforms, timestamp)
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -89,7 +90,7 @@ class ArtifactTransformReportOutputTest {
         val stdout =
             captureStdout {
                 println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                reportOutput.write(sampleTransforms, ReportScope.SingleBuild, timestamp)
+                singleBuildOutputs.write(sampleTransforms, timestamp)
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -115,7 +116,7 @@ class ArtifactTransformReportOutputTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                reportOutput.write(emptyList(), ReportScope.Aggregate, timestamp)
+                aggregateOutputs.write(emptyList(), timestamp)
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
@@ -128,9 +129,8 @@ class ArtifactTransformReportOutputTest {
     fun `write if present logs before publishing and skips callback for empty transforms`() {
         val stdout =
             captureStdout {
-                reportOutput.writeIfPresent(
+                aggregateOutputs.writeIfPresent(
                     sampleTransforms,
-                    ReportScope.Aggregate,
                     onPresent = { println("mode log") },
                     timestamp = timestamp,
                 )
@@ -140,9 +140,8 @@ class ArtifactTransformReportOutputTest {
 
         val emptyStdout =
             captureStdout {
-                reportOutput.writeIfPresent(
+                aggregateOutputs.writeIfPresent(
                     emptyList(),
-                    ReportScope.Aggregate,
                     onPresent = { println("unexpected mode log") },
                     timestamp = timestamp,
                 )
@@ -153,7 +152,7 @@ class ArtifactTransformReportOutputTest {
     @Test
     fun `shared timestamp is used for text csv and html filenames`() {
         captureStdout {
-            reportOutput.write(sampleTransforms, ReportScope.Aggregate, timestamp)
+            aggregateOutputs.write(sampleTransforms, timestamp)
         }
 
         assertTrue(File("summary-artifact-transforms-$timestamp.txt").exists())

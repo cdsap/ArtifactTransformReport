@@ -3,10 +3,13 @@ package io.github.cdsap.artifacttransform.cli.output
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-open class ArtifactTransformReportOutput {
+open class ArtifactTransformOutputs(
+    private val singleBuild: Boolean,
+) {
+    private val reportScope: ReportScope = if (singleBuild) ReportScope.SingleBuild else ReportScope.Aggregate
+
     open fun writeIfPresent(
         transforms: List<ArtifactTransform>,
-        reportScope: ReportScope,
         onPresent: () -> Unit,
         timestamp: Long = System.currentTimeMillis(),
     ) {
@@ -14,12 +17,11 @@ open class ArtifactTransformReportOutput {
             return
         }
         onPresent()
-        write(transforms, reportScope, timestamp)
+        write(transforms, timestamp)
     }
 
     open fun write(
         transforms: List<ArtifactTransform>,
-        reportScope: ReportScope,
         timestamp: Long = System.currentTimeMillis(),
     ) {
         if (transforms.isEmpty()) {
