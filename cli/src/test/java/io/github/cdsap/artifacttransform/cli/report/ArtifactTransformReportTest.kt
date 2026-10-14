@@ -1,6 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
-import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformOutputs
+import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
 import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -36,7 +36,7 @@ class ArtifactTransformReportTest {
 
     @Test
     fun `aggregate report delegates to output with Aggregate scope`() {
-        val recording = RecordingReportOutput(singleBuild = false)
+        val recording = RecordingReportOutput()
         val report = ArtifactTransformReport(Filter(), UnusedRepository, recording)
 
         val stdout =
@@ -52,7 +52,7 @@ class ArtifactTransformReportTest {
 
     @Test
     fun `single report delegates to output with SingleBuild scope`() {
-        val recording = RecordingReportOutput(singleBuild = true)
+        val recording = RecordingReportOutput()
         val report = SingleArtifactTransformReport("build1", UnusedRepository, recording)
 
         val stdout =
@@ -67,8 +67,8 @@ class ArtifactTransformReportTest {
 
     @Test
     fun `empty results skip output and write no files`() {
-        val aggregateRecording = RecordingReportOutput(singleBuild = false)
-        val singleBuildRecording = RecordingReportOutput(singleBuild = true)
+        val aggregateRecording = RecordingReportOutput()
+        val singleBuildRecording = RecordingReportOutput()
         ArtifactTransformReport(Filter(), UnusedRepository, aggregateRecording).publishIfPresent(emptyList())
         SingleArtifactTransformReport("build1", UnusedRepository, singleBuildRecording).publishIfPresent(emptyList())
 
@@ -107,14 +107,15 @@ class ArtifactTransformReportTest {
         val reportScope: ReportScope,
     )
 
-    private class RecordingReportOutput(private val singleBuild: Boolean) : ArtifactTransformOutputs(singleBuild) {
+    private class RecordingReportOutput : ArtifactTransformReportOutput() {
         val calls = mutableListOf<WriteCall>()
 
         override fun write(
             transforms: List<ArtifactTransform>,
+            reportScope: ReportScope,
             timestamp: Long,
         ) {
-            calls += WriteCall(transforms, if (singleBuild) ReportScope.SingleBuild else ReportScope.Aggregate)
+            calls += WriteCall(transforms, reportScope)
         }
     }
 
