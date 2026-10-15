@@ -1,7 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
-import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import io.github.cdsap.geapi.client.model.Filter
@@ -35,7 +34,7 @@ class ArtifactTransformReportTest {
         )
 
     @Test
-    fun `aggregate report delegates to output with Aggregate scope`() {
+    fun `multi-build report delegates to output with MultiBuild mode`() {
         val recording = RecordingReportOutput()
         val report = ArtifactTransformReport(Filter(), UnusedRepository, recording)
 
@@ -44,7 +43,7 @@ class ArtifactTransformReportTest {
                 report.publishIfPresent(sampleTransforms)
             }
 
-        assertEquals(listOf(WriteCall(sampleTransforms, ReportScope.Aggregate)), recording.calls)
+        assertEquals(listOf(WriteCall(sampleTransforms, ReportMode.MultiBuild)), recording.calls)
         assertTrue(stdout.contains("Total Artifact transforms: 1"))
         assertTrue(stdout.contains("Build Scans with Artifact transforms: 1"))
         assertNoOutputFiles()
@@ -60,7 +59,7 @@ class ArtifactTransformReportTest {
                 report.publishIfPresent(sampleTransforms)
             }
 
-        assertEquals(listOf(WriteCall(sampleTransforms, ReportScope.SingleBuild)), recording.calls)
+        assertEquals(listOf(WriteCall(sampleTransforms, ReportMode.SingleBuild)), recording.calls)
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertNoOutputFiles()
     }
@@ -104,7 +103,7 @@ class ArtifactTransformReportTest {
 
     private data class WriteCall(
         val transforms: List<ArtifactTransform>,
-        val reportScope: ReportScope,
+        val reportMode: ReportMode,
     )
 
     private class RecordingReportOutput : ArtifactTransformReportOutput() {
@@ -112,10 +111,10 @@ class ArtifactTransformReportTest {
 
         override fun write(
             transforms: List<ArtifactTransform>,
-            reportScope: ReportScope,
+            reportMode: ReportMode,
             timestamp: Long,
         ) {
-            calls += WriteCall(transforms, reportScope)
+            calls += WriteCall(transforms, reportMode)
         }
     }
 

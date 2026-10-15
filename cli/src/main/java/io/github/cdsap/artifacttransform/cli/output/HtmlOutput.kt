@@ -2,6 +2,7 @@ package io.github.cdsap.artifacttransform.cli.output
 
 import io.github.cdsap.artifacttransform.aggregatedCacheSizeByTransformActionType
 import io.github.cdsap.artifacttransform.artifactLevels
+import io.github.cdsap.artifacttransform.cli.report.ReportMode
 import io.github.cdsap.artifacttransform.attributeTransitionEdges
 import io.github.cdsap.artifacttransform.cacheEffectivenessByTransformActionType
 import io.github.cdsap.artifacttransform.cacheHitRateByBuildScan
@@ -44,12 +45,12 @@ import java.io.File
  */
 class HtmlOutput(
     private val transforms: List<ArtifactTransform>,
-    private val reportScope: ReportScope,
+    private val reportMode: ReportMode,
     private val timestamp: Long
 ) {
 
     fun writeHtml() {
-        val html = "${reportScope.fileNamePrefix}artifact-transforms-$timestamp.html"
+        val html = "${reportMode.fileNamePrefix}artifact-transforms-$timestamp.html"
         val startTimestamp = System.currentTimeMillis()
         File(html).writeText(render())
         val endTime = System.currentTimeMillis()
@@ -132,9 +133,9 @@ class HtmlOutput(
     }
 
     private fun reportKindLabel(): String =
-        when (reportScope) {
-            ReportScope.SingleBuild -> "Single build scan"
-            ReportScope.Aggregate -> "Aggregated builds"
+        when (reportMode) {
+            ReportMode.SingleBuild -> "Single build scan"
+            ReportMode.MultiBuild -> "Aggregated builds"
         }
 
     // --- generic table helpers ---------------------------------------------------------------

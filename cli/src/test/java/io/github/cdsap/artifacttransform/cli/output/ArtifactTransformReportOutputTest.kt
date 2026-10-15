@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.output
 
+import io.github.cdsap.artifacttransform.cli.report.ReportMode
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -55,7 +56,7 @@ class ArtifactTransformReportOutputTest {
             captureStdout {
                 println("Total Artifact transforms: ${sampleTransforms.size}")
                 println("Build Scans with Artifact transforms: ${sampleTransforms.groupBy { it.buildScanId }.count()}")
-                aggregateOutputs.write(sampleTransforms, ReportScope.Aggregate, timestamp)
+                aggregateOutputs.write(sampleTransforms, ReportMode.MultiBuild, timestamp)
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -65,7 +66,7 @@ class ArtifactTransformReportOutputTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
-        val expectedSummary = ArtifactTransformView(sampleTransforms).render().asText()
+        val expectedSummary = ArtifactTransformView(sampleTransforms, ReportMode.MultiBuild).render().asText()
         assertEquals(expectedSummary, txt.readText())
         assertTrue(csv.readText().startsWith("transformActionType,"))
         assertTrue(html.readText().contains("<html"))
@@ -90,7 +91,7 @@ class ArtifactTransformReportOutputTest {
         val stdout =
             captureStdout {
                 println("Build build1 - Total Artifact transforms: ${sampleTransforms.size} ")
-                singleBuildOutputs.write(sampleTransforms, ReportScope.SingleBuild, timestamp)
+                singleBuildOutputs.write(sampleTransforms, ReportMode.SingleBuild, timestamp)
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -100,7 +101,7 @@ class ArtifactTransformReportOutputTest {
         assertTrue(txt.exists())
         assertTrue(csv.exists())
         assertTrue(html.exists())
-        assertEquals(ArtifactTransformView(sampleTransforms).render().asText(), txt.readText())
+        assertEquals(ArtifactTransformView(sampleTransforms, ReportMode.SingleBuild).render().asText(), txt.readText())
         assertTrue(html.readText().contains("Single build scan"))
         assertTrue(stdout.contains("Build build1 - Total Artifact transforms: 1 "))
         assertTrue(stdout.contains("Artifacts Transforms by outcome"))
@@ -116,7 +117,7 @@ class ArtifactTransformReportOutputTest {
     fun `empty transforms skip file outputs`() {
         val stdout =
             captureStdout {
-                aggregateOutputs.write(emptyList(), ReportScope.Aggregate, timestamp)
+                aggregateOutputs.write(emptyList(), ReportMode.MultiBuild, timestamp)
             }
 
         assertFalse(File("summary-artifact-transforms-$timestamp.txt").exists())
@@ -131,7 +132,7 @@ class ArtifactTransformReportOutputTest {
             captureStdout {
                 aggregateOutputs.writeIfPresent(
                     sampleTransforms,
-                    ReportScope.Aggregate,
+                    ReportMode.MultiBuild,
                     onPresent = { println("mode log") },
                     timestamp = timestamp,
                 )
@@ -143,7 +144,7 @@ class ArtifactTransformReportOutputTest {
             captureStdout {
                 aggregateOutputs.writeIfPresent(
                     emptyList(),
-                    ReportScope.Aggregate,
+                    ReportMode.MultiBuild,
                     onPresent = { println("unexpected mode log") },
                     timestamp = timestamp,
                 )
@@ -154,7 +155,7 @@ class ArtifactTransformReportOutputTest {
     @Test
     fun `shared timestamp is used for text csv and html filenames`() {
         captureStdout {
-            aggregateOutputs.write(sampleTransforms, ReportScope.Aggregate, timestamp)
+            aggregateOutputs.write(sampleTransforms, ReportMode.MultiBuild, timestamp)
         }
 
         assertTrue(File("summary-artifact-transforms-$timestamp.txt").exists())
