@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.output
 
+import io.github.cdsap.artifacttransform.cli.report.ReportMode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -33,7 +34,7 @@ class SummaryTextOutputTest {
     fun `writes summary text file for aggregate scope`() {
         val stdout =
             captureStdout {
-                SummaryTextOutput(sampleSummary, ReportScope.Aggregate, timestamp).writeSummary()
+                SummaryTextOutput(sampleSummary, ReportMode.MultiBuild, timestamp).writeSummary()
             }
 
         val txt = File("summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }
@@ -47,7 +48,7 @@ class SummaryTextOutputTest {
     fun `writes summary text file for single-build scope`() {
         val stdout =
             captureStdout {
-                SummaryTextOutput(sampleSummary, ReportScope.SingleBuild, timestamp).writeSummary()
+                SummaryTextOutput(sampleSummary, ReportMode.SingleBuild, timestamp).writeSummary()
             }
 
         val txt = File("single-summary-artifact-transforms-$timestamp.txt").also { createdFiles += it }

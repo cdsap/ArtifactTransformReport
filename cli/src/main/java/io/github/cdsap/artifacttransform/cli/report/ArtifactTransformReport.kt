@@ -2,7 +2,6 @@ package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.artifacttransform.GetArtifactTransforms
 import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformReportOutput
-import io.github.cdsap.artifacttransform.cli.output.ReportScope
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.Filter
 import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
@@ -17,7 +16,7 @@ class ArtifactTransformReport(
     }
 
     internal fun publishIfPresent(transforms: List<ArtifactTransform>) {
-        reportOutput.writeIfPresent(transforms, ReportScope.Aggregate, onPresent = {
+        reportOutput.writeIfPresent(transforms, ReportMode.MultiBuild, onPresent = {
             println("Total Artifact transforms: ${transforms.size}")
             println("Build Scans with Artifact transforms: ${transforms.groupBy { it.buildScanId }.count()}")
         })

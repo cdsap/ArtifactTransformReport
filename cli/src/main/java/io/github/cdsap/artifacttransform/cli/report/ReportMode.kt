@@ -1,13 +1,13 @@
-package io.github.cdsap.artifacttransform.cli.output
+package io.github.cdsap.artifacttransform.cli.report
 
-enum class ReportScope {
-    Aggregate,
+enum class ReportMode {
+    MultiBuild,
     SingleBuild;
 
     val fileNamePrefix: String
         get() =
             when (this) {
-                Aggregate -> ""
+                MultiBuild -> ""
                 SingleBuild -> "single-"
             }
 }
