@@ -28,7 +28,7 @@ open class ArtifactTransformReportOutput {
         if (transforms.isEmpty()) {
             return
         }
-        val rendered = ArtifactTransformView(transforms, reportMode).render()
+        val rendered = ArtifactTransformView(transforms).render()
         rendered.print()
         SummaryTextOutput(rendered.asText(), reportMode, timestamp).writeSummary()
         CsvOutput(transforms, reportMode, timestamp).writeCsv()

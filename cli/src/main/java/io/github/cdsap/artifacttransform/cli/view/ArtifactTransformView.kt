@@ -2,12 +2,10 @@ package io.github.cdsap.artifacttransform.cli.view
 
 import com.jakewharton.picnic.Table
 import com.jakewharton.picnic.renderText
-import io.github.cdsap.artifacttransform.cli.report.ReportMode
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
 class ArtifactTransformView(
     val transforms: List<ArtifactTransform>,
-    private val reportMode: ReportMode,
 ) {
 
     fun render(): RenderedArtifactTransformReport =
