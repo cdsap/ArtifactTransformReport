@@ -1,6 +1,5 @@
 package io.github.cdsap.artifacttransform.cli.view
 
-import io.github.cdsap.artifacttransform.cli.report.ReportMode
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -49,7 +48,7 @@ class ArtifactTransformViewTest {
     fun `prints console sections without writing summary file`() {
         val stdout =
             captureStdout {
-                ArtifactTransformView(sampleTransforms, ReportMode.MultiBuild).print()
+                ArtifactTransformView(sampleTransforms).print()
             }
 
         assertTrue(stdout.contains("Artifacts Transforms by outcome"))
@@ -61,7 +60,7 @@ class ArtifactTransformViewTest {
 
     @Test
     fun `console and summary text share the same section order`() {
-        val view = ArtifactTransformView(sampleTransforms, ReportMode.MultiBuild)
+        val view = ArtifactTransformView(sampleTransforms)
         val console =
             captureStdout {
                 view.print()
@@ -74,7 +73,7 @@ class ArtifactTransformViewTest {
 
     @Test
     fun `render reuses the same section text for console and summary`() {
-        val rendered = ArtifactTransformView(sampleTransforms, ReportMode.MultiBuild).render()
+        val rendered = ArtifactTransformView(sampleTransforms).render()
         val console =
             captureStdout {
                 rendered.print()
@@ -87,7 +86,7 @@ class ArtifactTransformViewTest {
             assertTrue(summary.contains(marker))
             assertTrue(console.contains(marker))
         }
-        assertEquals(summary, ArtifactTransformView(sampleTransforms, ReportMode.MultiBuild).renderSummaryText())
+        assertEquals(summary, ArtifactTransformView(sampleTransforms).renderSummaryText())
     }
 
     private fun appearingSectionOrder(text: String): List<String> =
