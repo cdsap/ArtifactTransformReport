@@ -14,6 +14,7 @@ import io.github.cdsap.artifacttransform.cli.report.SingleArtifactTransformRepor
 import io.github.cdsap.geapi.client.model.ClientType
 import io.github.cdsap.geapi.client.model.Filter
 import io.github.cdsap.geapi.client.network.GEClient
+import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
 import io.github.cdsap.geapi.client.repository.impl.GradleRepositoryImpl
 import kotlinx.coroutines.runBlocking
 
@@ -21,7 +22,9 @@ fun main(args: Array<String>) {
     ArtifactTransformCli().main(args)
 }
 
-class ArtifactTransformCli : CliktCommand() {
+class ArtifactTransformCli(
+    private val repositoryProvider: (String, String) -> GradleEnterpriseRepository = ::createRepository,
+) : CliktCommand() {
     private val apiKey: String by option().required()
     private val url by option().required()
     private val maxBuilds by option().int().default(100).check("max builds to process 50000") { it <= 50000 }
@@ -41,21 +44,20 @@ class ArtifactTransformCli : CliktCommand() {
             }
         }
 
-        val filter = Filter(
-            maxBuilds = maxBuilds,
-            project = project,
-            tags = tags.map { it.replaceFirst("not:", "!") },
-            user = user,
-            includeFailedBuilds = includeFailedBuilds,
-            requestedTask = requestedTask,
-            sinceBuildId = sinceBuildId,
-            exclusiveTags = exclusiveTags,
-            clientType = ClientType.CLI
-        )
+        val filter =
+            Filter(
+                maxBuilds = maxBuilds,
+                project = project,
+                tags = tags.map { it.replaceFirst("not:", "!") },
+                user = user,
+                includeFailedBuilds = includeFailedBuilds,
+                requestedTask = requestedTask,
+                sinceBuildId = sinceBuildId,
+                exclusiveTags = exclusiveTags,
+                clientType = ClientType.CLI,
+            )
 
-        val repository = GradleRepositoryImpl(
-            GEClient(apiKey, url)
-        )
+        val repository = repositoryProvider(apiKey, url)
         runBlocking {
             if (buildScanId != null) {
                 SingleArtifactTransformReport(buildScanId!!, repository).process()
@@ -65,3 +67,8 @@ class ArtifactTransformCli : CliktCommand() {
         }
     }
 }
+
+private fun createRepository(
+    apiKey: String,
+    url: String,
+): GradleEnterpriseRepository = GradleRepositoryImpl(GEClient(apiKey, url))
