@@ -1,12 +1,10 @@
-package io.github.cdsap.artifacttransform.cli.report
+package io.github.cdsap.artifacttransform.cli.output
 
-import io.github.cdsap.artifacttransform.cli.output.CsvOutput
-import io.github.cdsap.artifacttransform.cli.output.HtmlOutput
-import io.github.cdsap.artifacttransform.cli.output.SummaryTextOutput
+import io.github.cdsap.artifacttransform.cli.report.ReportMode
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 
-open class ArtifactTransformReportOutput {
+open class ArtifactTransformOutput {
     open fun writeIfPresent(
         transforms: List<ArtifactTransform>,
         reportMode: ReportMode,

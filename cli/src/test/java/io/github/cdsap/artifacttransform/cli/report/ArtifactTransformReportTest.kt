@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
+import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformOutput
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
 import io.github.cdsap.geapi.client.model.Filter
@@ -105,7 +106,7 @@ class ArtifactTransformReportTest {
         val reportMode: ReportMode,
     )
 
-    private class RecordingReportOutput : ArtifactTransformReportOutput() {
+    private class RecordingReportOutput : ArtifactTransformOutput() {
         val calls = mutableListOf<WriteCall>()
 
         override fun write(

@@ -1,5 +1,6 @@
 package io.github.cdsap.artifacttransform.cli.report
 
+import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformOutput
 import io.github.cdsap.artifacttransform.cli.view.ArtifactTransformView
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.ChangedAttributes
@@ -12,11 +13,11 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class ArtifactTransformReportOutputTest {
+class ArtifactTransformOutputTest {
     private val timestamp = 1_700_000_000_083L
     private val createdFiles = mutableListOf<File>()
-    private val aggregateOutputs = ArtifactTransformReportOutput()
-    private val singleBuildOutputs = ArtifactTransformReportOutput()
+    private val aggregateOutputs = ArtifactTransformOutput()
+    private val singleBuildOutputs = ArtifactTransformOutput()
 
     private val sampleTransforms =
         listOf(

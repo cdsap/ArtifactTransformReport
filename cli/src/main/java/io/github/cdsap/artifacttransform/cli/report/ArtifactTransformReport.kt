@@ -1,6 +1,7 @@
 package io.github.cdsap.artifacttransform.cli.report
 
 import io.github.cdsap.artifacttransform.GetArtifactTransforms
+import io.github.cdsap.artifacttransform.cli.output.ArtifactTransformOutput
 import io.github.cdsap.geapi.client.model.ArtifactTransform
 import io.github.cdsap.geapi.client.model.Filter
 import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
@@ -8,7 +9,7 @@ import io.github.cdsap.geapi.client.repository.GradleEnterpriseRepository
 class ArtifactTransformReport(
     private val filter: Filter,
     private val repository: GradleEnterpriseRepository,
-    private val reportOutput: ArtifactTransformReportOutput = ArtifactTransformReportOutput(),
+    private val reportOutput: ArtifactTransformOutput = ArtifactTransformOutput(),
 ) {
     suspend fun process() {
         publishIfPresent(GetArtifactTransforms(filter, repository).get())
