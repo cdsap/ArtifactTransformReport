@@ -6,11 +6,11 @@ import kotlin.time.toDuration
 
 fun List<ArtifactTransform>.sortedByDurationDescending() = this.sortedByDescending { it.duration.toInt() }
 
-fun List<ArtifactTransform>.sortedByDurationAndType() = this
+fun List<ArtifactTransform>.sortedByDurationAndType(): List<ArtifactTransform> = this
     .groupBy { it.transformActionType }
-    .mapValues { entry -> entry.value.maxByOrNull { it.duration.toInt() } }
+    .mapValues { entry -> entry.value.maxBy { it.duration.toInt() } }
     .values
-    .sortedByDescending { it!!.duration.toInt() }
+    .sortedByDescending { it.duration.toInt() }
 
 
 
