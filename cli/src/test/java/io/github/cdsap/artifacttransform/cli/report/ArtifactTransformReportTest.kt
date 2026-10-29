@@ -128,6 +128,7 @@ class ArtifactTransformReportTest {
 
         override suspend fun getBuildScansWithAdvancedQuery(
             filter: Filter,
+            query: String,
             buildId: String?,
         ) = unused()
 
