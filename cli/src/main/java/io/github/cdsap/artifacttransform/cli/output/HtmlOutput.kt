@@ -226,7 +226,7 @@ class HtmlOutput(
             "${t.transformActionType.extractName()} ${t.artifactTransformExecutionName.substringBefore(" [")}"
         val slowest = transforms.sortedByDurationDescending().take(10)
             .map { label(it) to formatMsValue(it.duration.toIntOrNull() ?: 0) }
-        val slowestByType = transforms.sortedByDurationAndType().filterNotNull().take(10)
+        val slowestByType = transforms.sortedByDurationAndType().take(10)
             .map { label(it) to formatMsValue(it.duration.toIntOrNull() ?: 0) }
         return card(
             "Slowest artifact transforms",
