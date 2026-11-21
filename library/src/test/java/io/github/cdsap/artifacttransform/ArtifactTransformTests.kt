@@ -27,8 +27,11 @@ class ArtifactTransformTests {
     @Test
     fun `test sortedByDurationAndType`() {
         val sortedList = sampleTransforms.sortedByDurationAndType()
-        assertEquals("TransformType1", sortedList[0]!!.transformActionType)
-        assertEquals("TransformType2", sortedList[1]!!.transformActionType)
+        assertEquals("TransformType1", sortedList[0].transformActionType)
+        assertEquals("TransformType2", sortedList[1].transformActionType)
+        assertEquals(300, sortedList[0].duration.toInt())
+        assertEquals(150, sortedList[1].duration.toInt())
+        assertEquals(emptyList<ArtifactTransform>(), emptyList<ArtifactTransform>().sortedByDurationAndType())
     }
 
     @Test

@@ -58,13 +58,13 @@ class SlowestView(transforms: List<ArtifactTransform>) {
                         }
                         if (i < slowDurationByType.size) {
                             labelMetric(
-                                slowDurationByType[i]!!.transformActionType.extractName() + "\n" + slowDurationByType[i]!!.artifactTransformExecutionName.replace(
+                                slowDurationByType[i].transformActionType.extractName() + "\n" + slowDurationByType[i].artifactTransformExecutionName.replace(
                                     " ",
                                     "\n"
                                 )
                             )
                             valueMetric(
-                                slowDurationByType[i]!!.duration.toInt().roundMilliseconds()
+                                slowDurationByType[i].duration.toInt().roundMilliseconds()
                                     .toDuration(DurationUnit.MILLISECONDS)
                             )
                         } else {
